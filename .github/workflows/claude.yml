@@ -1,7 +1,7 @@
 name: Claude
 
 # Gatilhos:
-#  - label "pronta-para-claude" aplicado a uma issue -> Claude implementa a US e abre branch/PR
+#  - label "pronta-para-claude" aplicado a uma issue -> Claude implementa a US e cria a branch
 #  - comentário com "@claude" em issue ou PR        -> Claude responde / ajusta o PR
 on:
   issues:
@@ -22,17 +22,46 @@ jobs:
       (github.event_name == 'issues' && github.event.label.name == 'pronta-para-claude') ||
       (github.event_name != 'issues' && github.event.sender.type != 'Bot' && contains(github.event.comment.body, '@claude'))
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: write
       pull-requests: write
       issues: write
       id-token: write
       actions: read
+
+    # Banco de dados para o Claude rodar os testes antes de entregar (igual ao CI)
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: conectaja
+          POSTGRES_PASSWORD: conectaja
+          POSTGRES_DB: conectaja
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U conectaja"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://conectaja:conectaja@localhost:5432/conectaja
+      SECRET_KEY: claude-only-not-a-secret
+      DEBUG: "true"
+      ALLOWED_HOSTS: "*"
+
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
       - uses: anthropics/claude-code-action@v1
         with:
           # Autenticação pela assinatura (secret criado pelo /install-github-app)
@@ -40,7 +69,10 @@ jobs:
           label_trigger: "pronta-para-claude"
           additional_permissions: |
             actions: read
+          # Bash vem desligado por padrão: liberamos só o necessário para
+          # instalar dependências, gerar o esqueleto e rodar lint/testes/build.
           # sonnet = mais leve para a cota do plano Pro. Troque por opus só em US difíceis.
           claude_args: |
             --model sonnet
-            --max-turns 25
+            --max-turns 40
+            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(cd:*),Bash(ls:*),Bash(mkdir:*),Bash(pip:*),Bash(python:*),Bash(python3:*),Bash(django-admin:*),Bash(pytest:*),Bash(ruff:*),Bash(npm:*),Bash(npx:*),Bash(node:*)"
