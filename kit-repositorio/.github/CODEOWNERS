@@ -1,0 +1,13 @@
+# Qualquer um dos três pode aprovar o código em geral.
+*                     @ronaldovieira2505-rgb @santoroo @gabrielmarinhorosa
+
+# Automação e contexto do Claude: revisão técnica.
+/.github/             @santoroo @gabrielmarinhorosa
+/CLAUDE.md            @ronaldovieira2505-rgb @gabrielmarinhorosa
+
+# Regras de negócio e documentação de domínio: PO.
+/docs/                @ronaldovieira2505-rgb
+
+# Depois que a estrutura existir, restrinja áreas sensíveis, por exemplo:
+# /backend/apps/payments/   @gabrielmarinhorosa @santoroo
+# /deploy/                  @gabrielmarinhorosa

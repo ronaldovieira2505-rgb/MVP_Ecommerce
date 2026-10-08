@@ -1,0 +1,56 @@
+name: User Story
+description: Nova história de usuário (US) do Conecta Já
+title: "USxx — "
+labels: ["us"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Atenção:** o label `pronta-para-claude` dispara a implementação automática.
+        Só aplique depois de preencher os **critérios de aceite** e as **regras de negócio**.
+  - type: dropdown
+    id: ator
+    attributes:
+      label: Ator
+      options:
+        - Contratante
+        - Contratado
+        - Administrador
+    validations:
+      required: true
+  - type: dropdown
+    id: fase
+    attributes:
+      label: Fase
+      options:
+        - A definir
+        - MVP
+        - Pós-MVP
+    validations:
+      required: true
+  - type: textarea
+    id: historia
+    attributes:
+      label: História
+      description: "Eu como [ator] quero [ação] para [benefício]"
+    validations:
+      required: true
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Critérios de aceite
+      description: "Formato Dado / Quando / Então, um por linha. Cada um vira um teste."
+      placeholder: |
+        - Dado ..., quando ..., então ...
+    validations:
+      required: true
+  - type: textarea
+    id: regras
+    attributes:
+      label: Regras de negócio envolvidas
+      description: "Referencie `docs/` e `CLAUDE.md` (prazos, estados, valores, permissões)."
+  - type: textarea
+    id: fora
+    attributes:
+      label: Fora de escopo
+      description: "O que NÃO deve ser feito nesta US."
