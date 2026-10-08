@@ -1,0 +1,21 @@
+# PostgreSQL para desenvolvimento local (uso opcional).
+# Os valores coincidem com .env.example e com o CI.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: conectaja
+      POSTGRES_PASSWORD: conectaja
+      POSTGRES_DB: conectaja
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U conectaja"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

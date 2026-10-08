@@ -167,6 +167,15 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# Node
+node_modules/
+npm-debug.log*
+*.tsbuildinfo
+frontend/dist/
+
+# Django static
+backend/staticfiles/
+
 # Ruff stuff:
 .ruff_cache/
 
