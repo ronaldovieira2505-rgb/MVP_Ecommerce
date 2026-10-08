@@ -69,10 +69,14 @@ jobs:
           label_trigger: "pronta-para-claude"
           additional_permissions: |
             actions: read
-          # Bash vem desligado por padrão: liberamos só o necessário para
-          # instalar dependências, gerar o esqueleto e rodar lint/testes/build.
+          # Repositório público: o Claude só considera comentários do time (e os dele),
+          # para que terceiros não consigam influenciá-lo por comentários.
+          include_comments_by_actor: "ronaldovieira2505-rgb,santoroo,gabrielmarinhorosa,claude[bot]"
+          # Terminal restrito a uma lista de comandos. As instruções abaixo ensinam o
+          # Claude a trabalhar dentro dela (sem venv, sem "cd", um comando por vez).
           # sonnet = mais leve para a cota do plano Pro. Troque por opus só em US difíceis.
           claude_args: |
             --model sonnet
             --max-turns 40
-            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(cd:*),Bash(ls:*),Bash(mkdir:*),Bash(pip:*),Bash(python:*),Bash(python3:*),Bash(django-admin:*),Bash(pytest:*),Bash(ruff:*),Bash(npm:*),Bash(npx:*),Bash(node:*)"
+            --allowedTools "Edit,Write,Read,Glob,Grep,Bash(ls:*),Bash(mkdir:*),Bash(pip:*),Bash(pip3:*),Bash(python:*),Bash(python3:*),Bash(django-admin:*),Bash(pytest:*),Bash(ruff:*),Bash(npm:*),Bash(npx:*),Bash(node:*)"
+            --append-system-prompt "Ambiente de execução (GitHub Actions): Python 3.12, Node LTS e PostgreSQL já estão prontos, e DATABASE_URL, SECRET_KEY, DEBUG e ALLOWED_HOSTS já estão no ambiente. Regras do terminal: (1) NÃO crie ambiente virtual; instale direto com 'pip install -r backend/requirements-dev.txt'. (2) Rode UM comando por vez, sem '&&', ';', '|' nem 'cd'. (3) Use caminhos ou flags no lugar de 'cd': 'python backend/manage.py <cmd>', 'pytest backend', 'ruff check backend', 'npm --prefix frontend install', 'npm --prefix frontend run lint', 'npm --prefix frontend test', 'npm --prefix frontend run build', 'npm create vite@latest frontend -- --template react-ts'. Configure o pytest para funcionar quando chamado da raiz (por exemplo, pytest.ini com rootdir/pythonpath apontando para backend). Se algum comando precisar de aprovação, não pare: procure a forma equivalente permitida."
