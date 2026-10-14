@@ -38,6 +38,10 @@ INSTALLED_APPS = [
     "rest_framework",
     "apps.accounts",
     "apps.core",
+    "apps.companies",
+    "apps.workers",
+    "apps.vacancies",
+    "apps.payments",
 ]
 
 MIDDLEWARE = [
@@ -94,6 +98,14 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Documentos e selfies: armazenamento privado, sem URL pública.
+PRIVATE_MEDIA_ROOT = Path(os.environ.get("PRIVATE_MEDIA_ROOT", BASE_DIR / "private_media"))
+
+# Integrações externas (interface + implementação fake). No MVP o PSP é simulado.
+PAYMENT_GATEWAY = os.environ.get(
+    "PAYMENT_GATEWAY", "integrations.payments.fake.FakePaymentGateway"
+)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
