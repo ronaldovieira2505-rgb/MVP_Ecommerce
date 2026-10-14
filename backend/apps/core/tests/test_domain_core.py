@@ -55,19 +55,19 @@ def test_user_has_role_choices():
 def test_data_migration_creates_single_platform_parameters_with_defaults():
     assert PlatformParameters.objects.count() == 1
     p = PlatformParameters.get()
-    assert (p.min_publish_lead_hours, p.payment_deadline_hours) == (12, 24)
-    assert (p.applications_close_hours_before, p.checkin_open_minutes_before) == (2, 30)
+    assert (p.min_publish_lead_minutes, p.payment_deadline_minutes) == (720, 1440)
+    assert (p.applications_close_minutes_before, p.checkin_open_minutes_before) == (120, 30)
     assert (p.no_show_tolerance_minutes, p.geofence_radius_m) == (30, 150)
-    assert (p.auto_checkout_hours_after_end, p.contest_window_hours) == (2, 24)
+    assert (p.auto_checkout_minutes_after_end, p.contest_window_minutes) == (120, 1440)
     assert (p.no_show_limit, p.no_show_window_days, p.suspension_days) == (2, 30, 15)
-    assert (p.free_cancel_hours_before, p.late_cancel_block_days) == (24, 7)
+    assert (p.free_cancel_minutes_before, p.late_cancel_block_days) == (1440, 7)
     assert p.worker_fee_percent == Decimal("3")
 
 
 def test_platform_parameters_is_singleton():
-    PlatformParameters(min_publish_lead_hours=1).save()
+    PlatformParameters(min_publish_lead_minutes=60).save()
     assert PlatformParameters.objects.count() == 1
-    assert PlatformParameters.get().min_publish_lead_hours == 1
+    assert PlatformParameters.get().min_publish_lead_minutes == 60
     with pytest.raises(NotImplementedError):
         PlatformParameters.get().delete()
 
