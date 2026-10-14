@@ -44,6 +44,11 @@ class Company(models.Model):
         choices=VerificationStatus.choices,
         default=VerificationStatus.PENDING,
     )
+    data_unverified = models.BooleanField(
+        "dados não conferidos",
+        default=False,
+        help_text="A consulta de CNPJ falhou no cadastro: o admin deve conferir os dados.",
+    )
     description = models.TextField("descrição", blank=True)
     created_at = models.DateTimeField("criada em", auto_now_add=True)
 

@@ -2,7 +2,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import type { Role } from '../api'
 import { useAuth } from '../authContext'
 import NotificationBell from './NotificationBell'
-import { Button } from './ui'
+import { Alert, Button } from './ui'
 
 const MENU: Record<Role, { to: string; label: string }[]> = {
   COMPANY: [
@@ -57,6 +57,11 @@ export default function Layout() {
         </div>
       </header>
       <main className="app-main">
+        {user?.role === 'COMPANY' && user.verification_status === 'PENDENTE' && (
+          <Alert tone="info">
+            Cadastro em análise: você poderá publicar vagas após a aprovação
+          </Alert>
+        )}
         <Outlet />
       </main>
     </>

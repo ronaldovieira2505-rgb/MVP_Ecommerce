@@ -1,16 +1,95 @@
-"""Verificação (triagem manual) da empresa."""
+"""Cadastro e verificação (triagem manual) da empresa."""
 
-from django.db import transaction
+from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from apps.companies.models import Company
+from apps.accounts.models import Role
+from apps.companies.models import Company, CompanyMember
 from apps.companies.state_machine import COMPANY_VERIFICATION_MACHINE
 from apps.core.exceptions import DomainError
-from apps.core.models import VerificationReview
+from apps.core.models import PlatformParameters, VerificationReview
 from apps.core.notifications import notify_company
 from apps.core.state_machine import transition
+from integrations.cnpj import CnpjLookupError, get_cnpj_lookup
 
 S = Company.VerificationStatus
+
+CNPJ_ALREADY_REGISTERED = "Já existe uma conta para este CNPJ"
+EMAIL_ALREADY_REGISTERED = "Já existe uma conta com este e-mail"
+
+
+class CnpjAlreadyRegistered(DomainError):
+    pass
+
+
+class EmailAlreadyRegistered(DomainError):
+    pass
+
+
+def lookup_cnpj(cnpj):
+    """Consulta a BrasilAPI com o limite lido de `PlatformParameters`. Lança `CnpjLookupError`."""
+    timeout = PlatformParameters.get().cnpj_lookup_timeout_seconds
+    return get_cnpj_lookup().lookup(cnpj, timeout=timeout)
+
+
+COMPANY_FIELDS = (
+    "legal_name",
+    "trade_name",
+    "registration_status",
+    "street",
+    "number",
+    "complement",
+    "district",
+    "city",
+    "state",
+    "zip_code",
+    "state_registration",
+    "tax_regime",
+    "phone",
+    "preferred_payment_method",
+)
+
+
+def register_company(*, cnpj, owner_name, email, password, **fields):
+    """Cria User (COMPANY), Company (PENDENTE) e CompanyMember (OWNER).
+
+    A consulta de CNPJ é refeita aqui, no servidor: se falhar, a empresa fica marcada como
+    `data_unverified` para o admin conferir (nunca confiamos no cliente para isso).
+    """
+    if Company.objects.filter(cnpj=cnpj).exists():
+        raise CnpjAlreadyRegistered(CNPJ_ALREADY_REGISTERED)
+    User = get_user_model()
+    if User.objects.filter(email__iexact=email).exists():
+        raise EmailAlreadyRegistered(EMAIL_ALREADY_REGISTERED)
+    try:
+        lookup_cnpj(cnpj)
+        data_unverified = False
+    except CnpjLookupError:
+        data_unverified = True
+    try:
+        with transaction.atomic():
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=password,
+                first_name=owner_name[:150],
+                role=Role.COMPANY,
+            )
+            company = Company.objects.create(
+                cnpj=cnpj,
+                data_unverified=data_unverified,
+                verification_status=S.PENDING,
+                **{name: fields.get(name, "") for name in COMPANY_FIELDS},
+            )
+            CompanyMember.objects.create(
+                user=user, company=company, role=CompanyMember.MemberRole.OWNER
+            )
+    except IntegrityError as error:  # corrida: outro cadastro com o mesmo CNPJ/e-mail
+        if Company.objects.filter(cnpj=cnpj).exists():
+            raise CnpjAlreadyRegistered(CNPJ_ALREADY_REGISTERED) from error
+        raise EmailAlreadyRegistered(EMAIL_ALREADY_REGISTERED) from error
+    return company
 
 
 @transaction.atomic

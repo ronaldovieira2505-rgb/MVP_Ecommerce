@@ -107,6 +107,8 @@ PAYMENT_GATEWAY = os.environ.get(
     "PAYMENT_GATEWAY", "integrations.payments.fake.FakePaymentGateway"
 )
 
+CNPJ_LOOKUP = os.environ.get("CNPJ_LOOKUP", "integrations.cnpj.brasilapi.BrasilApiCnpjLookup")
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {

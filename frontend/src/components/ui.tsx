@@ -1,4 +1,9 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+} from 'react'
 import { useId } from 'react'
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -19,6 +24,20 @@ export function Field({ label, ...rest }: FieldProps) {
     <div className="field">
       <label htmlFor={id}>{label}</label>
       <input id={id} {...rest} />
+    </div>
+  )
+}
+
+type SelectFieldProps = SelectHTMLAttributes<HTMLSelectElement> & { label: string }
+
+export function SelectField({ label, children, ...rest }: SelectFieldProps) {
+  const id = useId()
+  return (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <select id={id} {...rest}>
+        {children}
+      </select>
     </div>
   )
 }
