@@ -12,4 +12,5 @@ geolocalização, notificações) fica aqui, no padrão **adaptador**:
 O código de domínio depende só da interface; a implementação é escolhida por configuração.
 **Os testes nunca chamam serviços externos** — usam a implementação fake.
 
-Esta pasta está vazia de propósito: as integrações entram junto das histórias que as usam.
+Integrações existentes: `payments/` (PSP: interface + fake, escolhida por `PAYMENT_GATEWAY`) e
+`geo/` (distância de Haversine). As demais entram junto das histórias que as usam.
