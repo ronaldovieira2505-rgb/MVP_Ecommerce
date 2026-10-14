@@ -71,6 +71,22 @@ export interface CnpjLookupResult {
   data?: CnpjData
 }
 
+export interface ProfileStep {
+  key: string
+  label: string
+  done: boolean
+  status?: string
+}
+
+export interface WorkerProfile {
+  id: number
+  full_name: string
+  cpf: string
+  phone: string
+  verification_status: string
+  profile_steps: ProfileStep[]
+}
+
 export interface AppNotification {
   id: number
   kind: string

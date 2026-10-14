@@ -6,6 +6,7 @@ urlpatterns = [
     path("health/", views.health, name="health"),
     path("auth/", include("apps.accounts.urls")),
     path("", include("apps.companies.urls")),
+    path("", include("apps.workers.urls")),
     path("notifications/", notification_views.NotificationListView.as_view(), name="notifications"),
     path(
         "notifications/read-all/",
