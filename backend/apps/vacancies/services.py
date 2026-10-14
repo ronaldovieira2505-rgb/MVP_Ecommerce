@@ -22,9 +22,10 @@ V = Vacancy.Status
 
 
 def _check_lead_time(vacancy_starts_at, now, params):
-    if vacancy_starts_at < now + timedelta(hours=params.min_publish_lead_hours):
+    if vacancy_starts_at < now + timedelta(minutes=params.min_publish_lead_minutes):
         raise DomainError(
-            f"O turno deve começar com ao menos {params.min_publish_lead_hours} h de antecedência."
+            "O turno deve começar com ao menos "
+            f"{params.min_publish_lead_minutes} min de antecedência."
         )
 
 
