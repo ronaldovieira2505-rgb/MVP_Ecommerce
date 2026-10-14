@@ -14,10 +14,11 @@ function csrfFromCookie(): string {
 
 export async function api<T>(
   path: string,
-  options: { method?: string; body?: unknown } = {},
+  options: { method?: string; body?: unknown; form?: FormData } = {},
 ): Promise<T> {
   const method = options.method ?? 'GET'
   const headers: Record<string, string> = {}
+  // Com FormData o navegador define o Content-Type (multipart) sozinho.
   if (options.body !== undefined) headers['Content-Type'] = 'application/json'
   if (method !== 'GET') headers['X-CSRFToken'] = csrfFromCookie()
 
@@ -25,7 +26,7 @@ export async function api<T>(
     method,
     headers,
     credentials: 'same-origin',
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body: options.form ?? (options.body !== undefined ? JSON.stringify(options.body) : undefined),
   })
   if (!response.ok) {
     let detail = 'Não foi possível concluir a operação.'
@@ -84,6 +85,9 @@ export interface WorkerProfile {
   cpf: string
   phone: string
   verification_status: string
+  pix_key_type?: string
+  pix_key?: string
+  verification_message?: string
   profile_steps: ProfileStep[]
 }
 

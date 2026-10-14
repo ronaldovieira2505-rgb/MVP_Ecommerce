@@ -42,6 +42,9 @@ class PlatformParameters(models.Model):
     cnpj_lookup_timeout_seconds = models.PositiveIntegerField(
         "limite da consulta de CNPJ (s)", default=5
     )
+    document_max_size_mb = models.PositiveIntegerField(
+        "tamanho máximo de cada documento/selfie (MB)", default=5
+    )
     worker_fee_percent = models.DecimalField(
         "taxa retida do prestador (%)", max_digits=5, decimal_places=2, default=Decimal("3")
     )
