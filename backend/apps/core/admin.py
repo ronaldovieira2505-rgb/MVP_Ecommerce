@@ -78,6 +78,7 @@ POSITIVE_ONLY_FIELDS = (
     "no_show_limit",
     "no_show_window_days",
     "suspension_days",
+    "cnpj_lookup_timeout_seconds",
 )
 
 
@@ -111,6 +112,7 @@ class PlatformParametersForm(forms.ModelForm):
             "no_show_window_days",
             "suspension_days",
             "late_cancel_block_days",
+            "cnpj_lookup_timeout_seconds",
             "worker_fee_percent",
         )
 

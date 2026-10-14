@@ -10,8 +10,15 @@ class CompanyMemberInline(admin.TabularInline):
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
-    list_display = ("legal_name", "trade_name", "cnpj", "verification_status", "created_at")
-    list_filter = ("verification_status", "tax_regime")
+    list_display = (
+        "legal_name",
+        "trade_name",
+        "cnpj",
+        "verification_status",
+        "data_unverified",
+        "created_at",
+    )
+    list_filter = ("verification_status", "data_unverified", "tax_regime")
     search_fields = ("legal_name", "trade_name", "cnpj")
     # O status só muda pelo serviço de domínio (grava a auditoria).
     readonly_fields = ("verification_status",)
