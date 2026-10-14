@@ -217,7 +217,7 @@ def test_reopened_vacancy_is_not_finalized_before_it_ends():
 def test_deadlines_read_platform_parameters():
     from apps.core.models import PlatformParameters
 
-    PlatformParameters.objects.update(payment_deadline_hours=1)
+    PlatformParameters.objects.update(payment_deadline_minutes=60)
     vacancy = vacancies.create_vacancy(
         company=make_company(), now=NOW, **vacancy_fields(NOW + timedelta(hours=72))
     )
@@ -247,3 +247,24 @@ def test_command_loop_option(monkeypatch):
     call_command("processar_prazos", "--loop", "15", stdout=out)
     assert calls == [15, 15]
     assert "Encerrado." in out.getvalue()
+
+
+def test_contest_window_of_two_minutes_auto_approves_with_controlled_clock():
+    from apps.core.models import PlatformParameters
+
+    PlatformParameters.objects.update(contest_window_minutes=2)
+    assignment = make_assignment()
+    start = assignment.vacancy.starts_at
+    process_deadlines(start)
+    assignments.check_in(assignment, lat=LAT, lng=LNG, now=start)
+    check_out = start + timedelta(hours=4)
+    assignments.check_out(assignment, now=check_out)
+
+    assert "aprovacoes_automaticas" not in process_deadlines(check_out + timedelta(minutes=1))
+    assignment.refresh_from_db()
+    assert assignment.status == Assignment.Status.AWAITING_VALIDATION
+
+    done = process_deadlines(check_out + timedelta(minutes=2))
+    assignment.refresh_from_db()
+    assert done["aprovacoes_automaticas"] == 1
+    assert assignment.status == Assignment.Status.PAID

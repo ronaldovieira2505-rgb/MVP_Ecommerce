@@ -39,8 +39,8 @@ def process_deadlines(now=None):
 
     # 1. Vaga não paga: prazo para pagar expirou ou a antecedência mínima deixou de ser possível.
     unpaid = Vacancy.objects.filter(status=V.AWAITING_PAYMENT).filter(
-        Q(created_at__lte=now - timedelta(hours=p.payment_deadline_hours))
-        | Q(starts_at__lt=now + timedelta(hours=p.min_publish_lead_hours))
+        Q(created_at__lte=now - timedelta(minutes=p.payment_deadline_minutes))
+        | Q(starts_at__lt=now + timedelta(minutes=p.min_publish_lead_minutes))
     )
     _apply(
         done,
@@ -53,7 +53,8 @@ def process_deadlines(now=None):
 
     # 2. Encerrar candidaturas.
     to_close = Vacancy.objects.filter(
-        status=V.PUBLISHED, starts_at__lte=now + timedelta(hours=p.applications_close_hours_before)
+        status=V.PUBLISHED,
+        starts_at__lte=now + timedelta(minutes=p.applications_close_minutes_before),
     )
     _apply(
         done,
@@ -91,14 +92,14 @@ def process_deadlines(now=None):
     # 5. Check-out automático.
     overdue = Assignment.objects.filter(
         status=S.IN_PROGRESS,
-        vacancy__ends_at__lt=now - timedelta(hours=p.auto_checkout_hours_after_end),
+        vacancy__ends_at__lt=now - timedelta(minutes=p.auto_checkout_minutes_after_end),
     )
     _apply(done, "checkouts_automaticos", overdue, lambda a: assignments.auto_check_out(a, now=now))
 
     # 6. Aprovação automática por decurso da janela de contestação.
     silent = Assignment.objects.filter(
         status=S.AWAITING_VALIDATION,
-        check_out_at__lte=now - timedelta(hours=p.contest_window_hours),
+        check_out_at__lte=now - timedelta(minutes=p.contest_window_minutes),
     )
     _apply(
         done, "aprovacoes_automaticas", silent, lambda a: assignments.auto_approve_hours(a, now=now)
