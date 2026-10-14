@@ -6,7 +6,9 @@ import CompanySignupPage from './pages/CompanySignupPage'
 import LoginPage from './pages/LoginPage'
 import Placeholder from './pages/Placeholder'
 import SignupChoicePage from './pages/SignupChoicePage'
+import WorkerDocumentsPage from './pages/WorkerDocumentsPage'
 import WorkerHomePage from './pages/WorkerHomePage'
+import WorkerPixPage from './pages/WorkerPixPage'
 import WorkerSignupPage from './pages/WorkerSignupPage'
 
 /** Manda para o login quem não está autenticado e para a home do papel quem não tem acesso. */
@@ -43,6 +45,8 @@ export default function AppRoutes() {
         <Route element={<RequireRole role="WORKER" />}>
           <Route path="prestador/vagas" element={<Placeholder title="Buscar vagas" issue="uma próxima issue" />} />
           <Route path="prestador/perfil" element={<WorkerHomePage />} />
+          <Route path="perfil/documentos" element={<WorkerDocumentsPage />} />
+          <Route path="perfil/pix" element={<WorkerPixPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
