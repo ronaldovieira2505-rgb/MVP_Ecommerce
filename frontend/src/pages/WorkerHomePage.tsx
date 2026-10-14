@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api, type WorkerProfile } from '../api'
 import { Alert, Badge, Card } from '../components/ui'
 
@@ -38,11 +39,15 @@ export default function WorkerHomePage() {
           return (
             <li key={step.key}>
               {index + 1}) {step.label}{' '}
-              <Badge tone={step.done ? 'success' : 'warning'}>{label}</Badge>
+              <Badge tone={step.done ? 'success' : 'warning'}>{label}</Badge>{' '}
+              <Link to={step.key === 'documentos' ? '/perfil/documentos' : '/perfil/pix'}>
+                {step.done ? 'Ver' : 'Completar'}
+              </Link>
             </li>
           )
         })}
       </ol>
+      {profile.verification_message && <Alert tone="info">{profile.verification_message}</Alert>}
     </Card>
   )
 }
