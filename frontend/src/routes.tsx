@@ -1,0 +1,57 @@
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import type { Role } from './api'
+import { homePathFor, useAuth } from './authContext'
+import Layout from './components/Layout'
+import LoginPage from './pages/LoginPage'
+import Placeholder from './pages/Placeholder'
+import SignupChoicePage from './pages/SignupChoicePage'
+
+/** Manda para o login quem não está autenticado e para a home do papel quem não tem acesso. */
+function RequireRole({ role }: { role: Role }) {
+  const { user, loading } = useAuth()
+  if (loading) return <p role="status">Carregando...</p>
+  if (!user) return <Navigate to="/login" replace />
+  if (user.role !== role) return <Navigate to={homePathFor(user.role)} replace />
+  return <Outlet />
+}
+
+function Home() {
+  const { user, loading } = useAuth()
+  if (loading) return <p role="status">Carregando...</p>
+  return <Navigate to={user ? homePathFor(user.role) : '/login'} replace />
+}
+
+export default function AppRoutes() {
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<Home />} />
+        <Route path="login" element={<LoginPage />} />
+        <Route path="cadastro" element={<SignupChoicePage />} />
+        <Route
+          path="cadastro/empresa"
+          element={<Placeholder title="Cadastro de empresa" issue="US01" />}
+        />
+        <Route
+          path="cadastro/prestador"
+          element={<Placeholder title="Cadastro de prestador" issue="US04" />}
+        />
+        <Route element={<RequireRole role="COMPANY" />}>
+          <Route path="empresa/vagas" element={<Placeholder title="Minhas vagas" issue="uma próxima issue" />} />
+          <Route
+            path="empresa/perfil"
+            element={<Placeholder title="Perfil da empresa" issue="uma próxima issue" />}
+          />
+        </Route>
+        <Route element={<RequireRole role="WORKER" />}>
+          <Route path="prestador/vagas" element={<Placeholder title="Buscar vagas" issue="uma próxima issue" />} />
+          <Route
+            path="prestador/perfil"
+            element={<Placeholder title="Meu perfil" issue="uma próxima issue" />}
+          />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  )
+}
