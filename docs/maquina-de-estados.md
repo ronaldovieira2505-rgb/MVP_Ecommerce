@@ -17,12 +17,12 @@
 
 | De | Evento / ator | Para | Condições e efeitos |
 |---|---|---|---|
-| — | Empresa cria a vaga | `AGUARDANDO_PAGAMENTO` | Empresa `APROVADA`; `starts_at` ≥ agora + *antecedência mínima (12 h)*; `ends_at` > `starts_at`. Cria `Custody` `PENDENTE` |
+| — | Empresa cria a vaga | `AGUARDANDO_PAGAMENTO` | Empresa `APROVADA`; `starts_at` ≥ agora + *antecedência mínima (720 min)*; `ends_at` > `starts_at`. Cria `Custody` `PENDENTE` |
 | `AGUARDANDO_PAGAMENTO` | Empresa paga (PSP simulado) | `PUBLICADA` | Revalida a antecedência mínima. Custódia → `RETIDA`, lançamento `RETENCAO` |
 | `AGUARDANDO_PAGAMENTO` | Empresa desiste | `CANCELADA` | Custódia → `CANCELADA` (nada foi cobrado) |
-| `AGUARDANDO_PAGAMENTO` | SISTEMA: *prazo para pagar (24 h)* expirou ou a antecedência mínima deixou de ser possível | `CANCELADA` | Idem |
+| `AGUARDANDO_PAGAMENTO` | SISTEMA: *prazo para pagar (1440 min)* expirou ou a antecedência mínima deixou de ser possível | `CANCELADA` | Idem |
 | `PUBLICADA` | Empresa remove a vaga (US24) | `CANCELADA` | Só se **nenhuma** candidatura foi aprovada. Estorno total (`ESTORNO_CONTRATANTE`); candidaturas pendentes → `EXPIRADA` |
-| `PUBLICADA` | SISTEMA: agora ≥ `starts_at` − *encerramento de candidaturas (2 h)* | `CANDIDATURAS_ENCERRADAS` | Novas candidaturas bloqueadas; a empresa ainda pode aprovar as pendentes até `starts_at` |
+| `PUBLICADA` | SISTEMA: agora ≥ `starts_at` − *encerramento de candidaturas (120 min)* | `CANDIDATURAS_ENCERRADAS` | Novas candidaturas bloqueadas; a empresa ainda pode aprovar as pendentes até `starts_at` |
 | `CANDIDATURAS_ENCERRADAS` | SISTEMA: agora ≥ `starts_at` e há ≥ 1 alocação `CONFIRMADA` | `EM_ANDAMENTO` | — |
 | `CANDIDATURAS_ENCERRADAS` | SISTEMA: agora ≥ `starts_at` e nenhuma alocação | `CANCELADA` | Estorno total; empresa notificada ("ninguém foi aprovado") |
 | `EM_ANDAMENTO` | SISTEMA: todas as alocações em estado final | `FINALIZADA` | Estorna as posições não utilizadas; custódia → `ENCERRADA`; candidaturas pendentes → `EXPIRADA` |
@@ -54,12 +54,12 @@ Estados finais: `APROVADA` (o acompanhamento continua na alocação), `RECUSADA`
 | — | Candidatura aprovada | `CONFIRMADA` | — |
 | `CONFIRMADA` | Prestador faz check-in (US50) | `EM_EXECUCAO` | Agora entre `starts_at` − *antecedência do check-in (30 min)* e `starts_at` + *tolerância de falta (30 min)*; distância até a vaga ≤ *raio (150 m)* (fórmula de Haversine). Guarda horário, coordenadas e distância |
 | `CONFIRMADA` | SISTEMA: agora > `starts_at` + *tolerância de falta (30 min)* sem check-in | `FALTA` | Libera a posição, reabre a vaga, notifica a empresa (US55), conta para a suspensão automática |
-| `CONFIRMADA` | Prestador cancela [pós-MVP: US72] | `CANCELADA_PRESTADOR` | ≥ *24 h* antes: sem penalidade. Menos de 24 h: bloqueio de *7 dias* + rebaixamento de status. Libera a posição |
+| `CONFIRMADA` | Prestador cancela [pós-MVP: US72] | `CANCELADA_PRESTADOR` | ≥ *1440 min (24 h)* antes: sem penalidade. Menos que isso: bloqueio de *7 dias* + rebaixamento de status. Libera a posição |
 | `CONFIRMADA` | Empresa cancela [pós-MVP: US71] | `CANCELADA_EMPRESA` | Estorno da posição |
 | `EM_EXECUCAO` | Prestador faz check-out (US54) | `AGUARDANDO_VALIDACAO` | Guarda o horário de saída |
-| `EM_EXECUCAO` | SISTEMA: agora > `ends_at` + *check-out automático (2 h)* | `AGUARDANDO_VALIDACAO` | `check_out_at = ends_at`, `check_out_auto = true` |
+| `EM_EXECUCAO` | SISTEMA: agora > `ends_at` + *check-out automático (120 min)* | `AGUARDANDO_VALIDACAO` | `check_out_at = ends_at`, `check_out_auto = true` |
 | `AGUARDANDO_VALIDACAO` | Empresa aprova as horas (US56) | `APROVADA` | — |
-| `AGUARDANDO_VALIDACAO` | SISTEMA: *janela de contestação (24 h)* após o check-out sem manifestação (US59) | `APROVADA` | `validated_by = SISTEMA`, motivo "aprovação por decurso de prazo" |
+| `AGUARDANDO_VALIDACAO` | SISTEMA: *janela de contestação (1440 min)* após o check-out sem manifestação (US59) | `APROVADA` | `validated_by = SISTEMA`, motivo "aprovação por decurso de prazo" |
 | `AGUARDANDO_VALIDACAO` | Empresa contesta com motivo (US57) [extra] | `CONTESTADA` | Notifica o prestador e o admin |
 | `CONTESTADA` | Admin decide a favor do prestador | `APROVADA` | Motivo obrigatório. A equipe administrativa contata as partes por fora |
 | `CONTESTADA` | Admin decide a favor da empresa | `ESTORNADA` | Motivo obrigatório; valor da posição volta à empresa |

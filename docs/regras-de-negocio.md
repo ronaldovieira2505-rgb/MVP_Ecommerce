@@ -17,19 +17,21 @@ Arredondamento: taxa = 3% do valor em centavos, arredondada para o centavo mais 
 
 | Chave | Padrão | Regra |
 |---|---|---|
-| `min_publish_lead_hours` | 12 | Antecedência mínima entre a publicação e o início do turno |
-| `payment_deadline_hours` | 24 | Prazo para pagar uma vaga criada; depois ela é cancelada |
-| `applications_close_hours_before` | 2 | Candidaturas encerram X h antes do início |
+| `min_publish_lead_minutes` | 720 (12 h) | Antecedência mínima entre a publicação e o início do turno |
+| `payment_deadline_minutes` | 1440 (24 h) | Prazo para pagar uma vaga criada; depois ela é cancelada |
+| `applications_close_minutes_before` | 120 (2 h) | Candidaturas encerram X min antes do início |
 | `checkin_open_minutes_before` | 30 | Check-in liberado a partir de X min antes do início |
 | `no_show_tolerance_minutes` | 30 | Sem check-in até X min após o início = falta |
 | `geofence_radius_m` | 150 | Distância máxima para aceitar o check-in |
-| `auto_checkout_hours_after_end` | 2 | Sem check-out até X h após o fim = check-out automático no horário previsto |
-| `contest_window_hours` | 24 | Janela para a empresa aprovar ou contestar; silêncio = aprovação |
+| `auto_checkout_minutes_after_end` | 120 (2 h) | Sem check-out até X min após o fim = check-out automático no horário previsto |
+| `contest_window_minutes` | 1440 (24 h) | Janela para a empresa aprovar ou contestar; silêncio = aprovação |
 | `no_show_limit` / `no_show_window_days` | 2 / 30 | Faltas que geram suspensão automática, e a janela considerada |
 | `suspension_days` | 15 | Duração da suspensão automática |
-| `free_cancel_hours_before` | 24 | Cancelamento sem penalidade até X h antes [pós-MVP] |
+| `free_cancel_minutes_before` | 1440 (24 h) | Cancelamento sem penalidade até X min antes [pós-MVP] |
 | `late_cancel_block_days` | 7 | Bloqueio por cancelamento tardio [pós-MVP] |
 | `worker_fee_percent` | 3 | Taxa retida do prestador |
+
+**Unidades e validação (US79):** todo prazo que era em horas passou a ser em **minutos** (os prazos em dias continuam em dias), o que permite demonstrar janelas curtas (ex.: contestação de 2 min). O admin edita os valores em "Parâmetros da plataforma"; a alteração vale de imediato e fica auditada (quem, quando, valor anterior e novo). Valores negativos são rejeitados. Exigem valor maior que zero: `payment_deadline_minutes`, `geofence_radius_m`, `contest_window_minutes`, `no_show_limit`, `no_show_window_days` e `suspension_days`. Os demais prazos aceitam 0. `worker_fee_percent` é inteiro entre 0 e 100.
 
 ## 3. Cadastro e triagem
 

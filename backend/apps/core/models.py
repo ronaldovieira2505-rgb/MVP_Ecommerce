@@ -8,12 +8,14 @@ from django.utils import timezone
 class PlatformParameters(models.Model):
     """Parâmetros editáveis (singleton). Padrões em docs/regras-de-negocio.md."""
 
-    min_publish_lead_hours = models.PositiveIntegerField(
-        "antecedência mínima de publicação (h)", default=12
+    min_publish_lead_minutes = models.PositiveIntegerField(
+        "antecedência mínima de publicação (min)", default=720
     )
-    payment_deadline_hours = models.PositiveIntegerField("prazo para pagar a vaga (h)", default=24)
-    applications_close_hours_before = models.PositiveIntegerField(
-        "encerramento de candidaturas (h antes do início)", default=2
+    payment_deadline_minutes = models.PositiveIntegerField(
+        "prazo para pagar a vaga (min)", default=1440
+    )
+    applications_close_minutes_before = models.PositiveIntegerField(
+        "encerramento de candidaturas (min antes do início)", default=120
     )
     checkin_open_minutes_before = models.PositiveIntegerField(
         "antecedência do check-in (min)", default=30
@@ -22,15 +24,17 @@ class PlatformParameters(models.Model):
         "tolerância de falta (min)", default=30
     )
     geofence_radius_m = models.PositiveIntegerField("raio do check-in (m)", default=150)
-    auto_checkout_hours_after_end = models.PositiveIntegerField(
-        "check-out automático (h após o fim)", default=2
+    auto_checkout_minutes_after_end = models.PositiveIntegerField(
+        "check-out automático (min após o fim)", default=120
     )
-    contest_window_hours = models.PositiveIntegerField("janela de contestação (h)", default=24)
+    contest_window_minutes = models.PositiveIntegerField(
+        "janela de contestação (min)", default=1440
+    )
     no_show_limit = models.PositiveIntegerField("faltas que geram suspensão", default=2)
     no_show_window_days = models.PositiveIntegerField("janela de faltas (dias)", default=30)
     suspension_days = models.PositiveIntegerField("duração da suspensão (dias)", default=15)
-    free_cancel_hours_before = models.PositiveIntegerField(
-        "cancelamento sem penalidade (h antes) [pós-MVP]", default=24
+    free_cancel_minutes_before = models.PositiveIntegerField(
+        "cancelamento sem penalidade (min antes) [pós-MVP]", default=1440
     )
     late_cancel_block_days = models.PositiveIntegerField(
         "bloqueio por cancelamento tardio (dias) [pós-MVP]", default=7
@@ -65,6 +69,30 @@ class PlatformParameters(models.Model):
 
     def worker_net_cents(self, gross_cents):
         return gross_cents - self.worker_fee_cents(gross_cents)
+
+
+class PlatformParametersChange(models.Model):
+    """Auditoria simples dos parâmetros: quem, quando, valor anterior e novo."""
+
+    field = models.CharField("parâmetro", max_length=60)
+    old_value = models.CharField("valor anterior", max_length=40)
+    new_value = models.CharField("valor novo", max_length=40)
+    changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+        verbose_name="alterado por",
+    )
+    changed_at = models.DateTimeField("alterado em", default=timezone.now)
+
+    class Meta:
+        verbose_name = "alteração de parâmetro"
+        verbose_name_plural = "alterações de parâmetros"
+        ordering = ["-changed_at", "-id"]
+
+    def __str__(self):
+        return f"{self.field}: {self.old_value} → {self.new_value}"
 
 
 class StateTransition(models.Model):
