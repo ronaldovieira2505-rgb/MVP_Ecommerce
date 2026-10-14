@@ -2,6 +2,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import type { Role } from './api'
 import { homePathFor, useAuth } from './authContext'
 import Layout from './components/Layout'
+import CompanySignupPage from './pages/CompanySignupPage'
 import LoginPage from './pages/LoginPage'
 import Placeholder from './pages/Placeholder'
 import SignupChoicePage from './pages/SignupChoicePage'
@@ -28,10 +29,7 @@ export default function AppRoutes() {
         <Route index element={<Home />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="cadastro" element={<SignupChoicePage />} />
-        <Route
-          path="cadastro/empresa"
-          element={<Placeholder title="Cadastro de empresa" issue="US01" />}
-        />
+        <Route path="cadastro/empresa" element={<CompanySignupPage />} />
         <Route
           path="cadastro/prestador"
           element={<Placeholder title="Cadastro de prestador" issue="US04" />}

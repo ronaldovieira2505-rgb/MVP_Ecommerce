@@ -51,6 +51,26 @@ export interface User {
   verification_status: string | null
 }
 
+export interface CnpjData {
+  legal_name: string
+  trade_name: string
+  registration_status: string
+  street: string
+  number: string
+  complement: string
+  district: string
+  city: string
+  state: string
+  zip_code: string
+}
+
+export interface CnpjLookupResult {
+  found: boolean
+  available: boolean
+  detail?: string
+  data?: CnpjData
+}
+
 export interface AppNotification {
   id: number
   kind: string
