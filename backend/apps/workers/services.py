@@ -1,8 +1,12 @@
 """Verificação do prestador e suspensão automática."""
 
+import os
+import uuid
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
@@ -11,6 +15,7 @@ from apps.core.exceptions import DomainError
 from apps.core.models import PlatformParameters, StateTransition, VerificationReview
 from apps.core.notifications import notify
 from apps.core.state_machine import transition
+from apps.core.validators import is_valid_cpf
 from apps.workers.models import Worker, WorkerDocument
 from apps.workers.state_machine import WORKER_VERIFICATION_MACHINE
 
@@ -87,6 +92,151 @@ def submit_documents(worker, *, actor=None, now=None):
         reason="Documentos enviados",
         now=now,
     )
+
+
+DOCUMENT_ERROR_TYPE = "Tipo de arquivo inválido. Envie JPG, PNG ou PDF."
+SELFIE_ERROR_TYPE = "Tipo de arquivo inválido. A selfie deve ser JPG ou PNG."
+DOCUMENT_ERROR_EMPTY = "O arquivo está vazio."
+DOCUMENTS_NOT_ALLOWED = "O envio de documentos não está disponível no seu status atual."
+JPEG_MAGIC = b"\xff\xd8\xff"
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+PDF_MAGIC = b"%PDF-"
+# extensão aceita → assinatura esperada no início do arquivo
+ALLOWED_SIGNATURES = {
+    ".jpg": JPEG_MAGIC,
+    ".jpeg": JPEG_MAGIC,
+    ".png": PNG_MAGIC,
+    ".pdf": PDF_MAGIC,
+}
+
+
+def validate_document_file(kind, uploaded, *, max_bytes):
+    """Valida tipo (extensão + assinatura) e tamanho. Lança `DomainError` com a mensagem."""
+    is_selfie = kind == WorkerDocument.Kind.SELFIE
+    type_error = SELFIE_ERROR_TYPE if is_selfie else DOCUMENT_ERROR_TYPE
+    extension = os.path.splitext(uploaded.name or "")[1].lower()
+    signature = ALLOWED_SIGNATURES.get(extension)
+    if signature is None or (is_selfie and extension == ".pdf"):
+        raise DomainError(type_error)
+    if uploaded.size == 0:
+        raise DomainError(DOCUMENT_ERROR_EMPTY)
+    if uploaded.size > max_bytes:
+        raise DomainError(f"O arquivo excede o tamanho máximo de {max_bytes // (1024 * 1024)} MB.")
+    uploaded.seek(0)
+    head = uploaded.read(len(signature))
+    uploaded.seek(0)
+    if head != signature:
+        raise DomainError(type_error)
+
+
+def upload_documents(worker, *, files, actor=None, now=None):
+    """Recebe `{Kind: arquivo}` com os três itens, valida tudo e só então grava.
+
+    Em `PENDENTE_DOCUMENTOS` ou `REJEITADO`; no reenvio os arquivos antigos são apagados.
+    Qualquer erro de validação não salva nada e não muda o status.
+    """
+    if worker.verification_status not in (S.PENDING_DOCUMENTS, S.REJECTED):
+        raise DocumentsNotAllowed(DOCUMENTS_NOT_ALLOWED)
+    missing = [k for k in WorkerDocument.Kind if k not in files]
+    if missing:
+        raise DomainError("Envie documento (frente e verso) e selfie.")
+    max_bytes = PlatformParameters.get().document_max_size_mb * 1024 * 1024
+    for kind in WorkerDocument.Kind:
+        validate_document_file(kind, files[kind], max_bytes=max_bytes)
+
+    old_files = []
+    with transaction.atomic():
+        locked = Worker.objects.select_for_update().get(pk=worker.pk)
+        if locked.verification_status not in (S.PENDING_DOCUMENTS, S.REJECTED):
+            raise DocumentsNotAllowed(DOCUMENTS_NOT_ALLOWED)
+        for old in locked.documents.all():
+            old_files.append(old.file)
+        locked.documents.all().delete()
+        for kind in WorkerDocument.Kind:
+            WorkerDocument.objects.create(worker=locked, kind=kind, file=files[kind])
+        worker = submit_documents(locked, actor=actor, now=now)
+    for stored in old_files:
+        stored.delete(save=False)
+    return worker
+
+
+class DocumentsNotAllowed(DomainError):
+    pass
+
+
+class InvalidPixKey(DomainError):
+    pass
+
+
+class WrongPassword(DomainError):
+    pass
+
+
+PIX_CPF_MISMATCH = "A chave PIX do tipo CPF precisa ser o seu próprio CPF"
+PIX_INVALID = {
+    Worker.PixKeyType.CPF: "CPF inválido",
+    Worker.PixKeyType.EMAIL: "E-mail inválido",
+    Worker.PixKeyType.PHONE: "Telefone inválido. Informe DDD e número.",
+    Worker.PixKeyType.RANDOM: "Chave aleatória inválida",
+}
+
+
+def normalize_pix_key(worker, key_type, key):
+    """Valida o formato da chave para o tipo e devolve a forma normalizada."""
+    P = Worker.PixKeyType
+    key = str(key).strip()
+    if key_type == P.CPF:
+        digits = "".join(c for c in key if c.isdigit())
+        if not is_valid_cpf(digits):
+            raise InvalidPixKey(PIX_INVALID[P.CPF])
+        if digits != worker.cpf:
+            raise InvalidPixKey(PIX_CPF_MISMATCH)
+        return digits
+    if key_type == P.EMAIL:
+        try:
+            validate_email(key)
+        except DjangoValidationError as error:
+            raise InvalidPixKey(PIX_INVALID[P.EMAIL]) from error
+        return key.lower()
+    if key_type == P.PHONE:
+        digits = "".join(c for c in key if c.isdigit())
+        if len(digits) in (12, 13) and digits.startswith("55"):
+            digits = digits[2:]
+        if len(digits) not in (10, 11) or digits[0] == "0":
+            raise InvalidPixKey(PIX_INVALID[P.PHONE])
+        return digits
+    if key_type == P.RANDOM:
+        try:
+            parsed = uuid.UUID(key)
+        except ValueError as error:
+            raise InvalidPixKey(PIX_INVALID[P.RANDOM]) from error
+        return str(parsed)
+    raise InvalidPixKey("Tipo de chave PIX inválido")
+
+
+@transaction.atomic
+def set_pix_key(worker, *, key_type, key, current_password="", actor=None, now=None):
+    """Cadastra ou troca a chave PIX. A troca exige a senha atual e gera auditoria."""
+    locked = Worker.objects.select_for_update().get(pk=worker.pk)
+    normalized = normalize_pix_key(locked, key_type, key)
+    replacing = bool(locked.pix_key)
+    if replacing and not locked.user.check_password(current_password or ""):
+        raise WrongPassword("Senha atual incorreta")
+    before = locked.masked_pix_key
+    locked.pix_key_type = key_type
+    locked.pix_key = normalized
+    locked.save(update_fields=["pix_key_type", "pix_key"])
+    StateTransition.objects.create(
+        entity_type="WorkerPixKey",
+        entity_id=locked.pk,
+        from_state=before,
+        to_state=locked.masked_pix_key,
+        actor=actor,
+        reason="Chave PIX trocada" if replacing else "Chave PIX cadastrada",
+        created_at=now or timezone.now(),
+    )
+    worker.refresh_from_db()
+    return worker
 
 
 @transaction.atomic
