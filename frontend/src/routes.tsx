@@ -6,6 +6,8 @@ import CompanySignupPage from './pages/CompanySignupPage'
 import LoginPage from './pages/LoginPage'
 import Placeholder from './pages/Placeholder'
 import SignupChoicePage from './pages/SignupChoicePage'
+import WorkerHomePage from './pages/WorkerHomePage'
+import WorkerSignupPage from './pages/WorkerSignupPage'
 
 /** Manda para o login quem não está autenticado e para a home do papel quem não tem acesso. */
 function RequireRole({ role }: { role: Role }) {
@@ -30,10 +32,7 @@ export default function AppRoutes() {
         <Route path="login" element={<LoginPage />} />
         <Route path="cadastro" element={<SignupChoicePage />} />
         <Route path="cadastro/empresa" element={<CompanySignupPage />} />
-        <Route
-          path="cadastro/prestador"
-          element={<Placeholder title="Cadastro de prestador" issue="US04" />}
-        />
+        <Route path="cadastro/prestador" element={<WorkerSignupPage />} />
         <Route element={<RequireRole role="COMPANY" />}>
           <Route path="empresa/vagas" element={<Placeholder title="Minhas vagas" issue="uma próxima issue" />} />
           <Route
@@ -43,10 +42,7 @@ export default function AppRoutes() {
         </Route>
         <Route element={<RequireRole role="WORKER" />}>
           <Route path="prestador/vagas" element={<Placeholder title="Buscar vagas" issue="uma próxima issue" />} />
-          <Route
-            path="prestador/perfil"
-            element={<Placeholder title="Meu perfil" issue="uma próxima issue" />}
-          />
+          <Route path="prestador/perfil" element={<WorkerHomePage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

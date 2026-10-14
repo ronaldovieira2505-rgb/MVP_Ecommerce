@@ -2,9 +2,11 @@
 
 from datetime import timedelta
 
-from django.db import transaction
+from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from apps.accounts.models import Role
 from apps.core.exceptions import DomainError
 from apps.core.models import PlatformParameters, StateTransition, VerificationReview
 from apps.core.notifications import notify
@@ -13,6 +15,61 @@ from apps.workers.models import Worker, WorkerDocument
 from apps.workers.state_machine import WORKER_VERIFICATION_MACHINE
 
 S = Worker.VerificationStatus
+
+CPF_ALREADY_REGISTERED = "Já existe uma conta para este CPF"
+EMAIL_ALREADY_REGISTERED = "Já existe uma conta com este e-mail"
+
+
+class CpfAlreadyRegistered(DomainError):
+    pass
+
+
+class EmailAlreadyRegistered(DomainError):
+    pass
+
+
+def register_worker(*, full_name, cpf, phone, birth_date, email, password):
+    """Cria User (WORKER) e Worker em `PENDENTE_DOCUMENTOS`. Documentos e PIX vêm na US05."""
+    User = get_user_model()
+    if Worker.objects.filter(cpf=cpf).exists():
+        raise CpfAlreadyRegistered(CPF_ALREADY_REGISTERED)
+    if User.objects.filter(email__iexact=email).exists():
+        raise EmailAlreadyRegistered(EMAIL_ALREADY_REGISTERED)
+    try:
+        with transaction.atomic():
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=password,
+                first_name=full_name[:150],
+                role=Role.WORKER,
+            )
+            return Worker.objects.create(
+                user=user,
+                full_name=full_name,
+                cpf=cpf,
+                phone=phone,
+                birth_date=birth_date,
+                verification_status=S.PENDING_DOCUMENTS,
+            )
+    except IntegrityError as error:  # corrida: outro cadastro com o mesmo CPF/e-mail
+        if Worker.objects.filter(cpf=cpf).exists():
+            raise CpfAlreadyRegistered(CPF_ALREADY_REGISTERED) from error
+        raise EmailAlreadyRegistered(EMAIL_ALREADY_REGISTERED) from error
+
+
+def profile_steps(worker):
+    """Passo a passo "Complete seu perfil" com o status de cada etapa."""
+    documents_done = worker.verification_status in (S.IN_REVIEW, S.APPROVED)
+    return [
+        {
+            "key": "documentos",
+            "label": "Documentos e selfie",
+            "done": documents_done,
+            "status": worker.verification_status,
+        },
+        {"key": "pix", "label": "Chave PIX", "done": bool(worker.pix_key)},
+    ]
 
 
 @transaction.atomic
