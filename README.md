@@ -6,7 +6,7 @@ serviços manuais de curta duração. Projeto acadêmico (`MVP_Ecommerce`).
 - `backend/`: Django + Django REST Framework + PostgreSQL
 - `frontend/`: React + TypeScript (Vite)
 - `docs/`: documentação de domínio
-- `CLAUDE.md`: regras do projeto
+- `docs/guia-do-repositorio.md`: regras do projeto
 
 ## Pré-requisitos (Windows)
 
