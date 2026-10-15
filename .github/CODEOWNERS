@@ -1,9 +1,9 @@
 # Qualquer um dos três pode aprovar o código em geral.
 *                     @ronaldovieira2505-rgb @santoroo @gabrielmarinhorosa
 
-# Automação e contexto do Claude: revisão técnica.
+# Automação e guia do repositório: revisão técnica.
 /.github/             @santoroo @gabrielmarinhorosa
-/CLAUDE.md            @ronaldovieira2505-rgb @gabrielmarinhorosa
+/docs/guia-do-repositorio.md @ronaldovieira2505-rgb @gabrielmarinhorosa
 
 # Regras de negócio e documentação de domínio: PO.
 /docs/                @ronaldovieira2505-rgb

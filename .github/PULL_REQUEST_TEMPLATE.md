@@ -9,7 +9,7 @@ Fecha #
 ## Checklist de revisão
 - [ ] Cada critério de aceite da issue está atendido e coberto por teste
 - [ ] CI verde (lint, testes, build)
-- [ ] Não quebra nenhuma regra travada do `CLAUDE.md` (escrow via PSP, prazos, máquinas de estado)
+- [ ] Não quebra nenhuma regra travada do `docs/guia-do-repositorio.md` (escrow via PSP, prazos, máquinas de estado)
 - [ ] Prazos, limites e taxas lidos de parâmetros configuráveis, sem valores fixos no código
 - [ ] Migrations incluídas e sem pendências
 - [ ] Nenhum segredo, dado pessoal real ou dependência nova sem justificativa
