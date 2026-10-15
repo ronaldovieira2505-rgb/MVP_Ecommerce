@@ -3,6 +3,9 @@ import type { Role } from './api'
 import { homePathFor, useAuth } from './authContext'
 import Layout from './components/Layout'
 import CompanySignupPage from './pages/CompanySignupPage'
+import CompanyVacanciesPage from './pages/CompanyVacanciesPage'
+import CompanyVacancyDetailPage from './pages/CompanyVacancyDetailPage'
+import CompanyVacancyNewPage from './pages/CompanyVacancyNewPage'
 import LoginPage from './pages/LoginPage'
 import Placeholder from './pages/Placeholder'
 import SignupChoicePage from './pages/SignupChoicePage'
@@ -36,7 +39,9 @@ export default function AppRoutes() {
         <Route path="cadastro/empresa" element={<CompanySignupPage />} />
         <Route path="cadastro/prestador" element={<WorkerSignupPage />} />
         <Route element={<RequireRole role="COMPANY" />}>
-          <Route path="empresa/vagas" element={<Placeholder title="Minhas vagas" issue="uma próxima issue" />} />
+          <Route path="empresa/vagas" element={<CompanyVacanciesPage />} />
+          <Route path="empresa/vagas/nova" element={<CompanyVacancyNewPage />} />
+          <Route path="empresa/vagas/:id" element={<CompanyVacancyDetailPage />} />
           <Route
             path="empresa/perfil"
             element={<Placeholder title="Perfil da empresa" issue="uma próxima issue" />}
