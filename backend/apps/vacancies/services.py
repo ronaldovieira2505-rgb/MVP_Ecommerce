@@ -8,10 +8,10 @@ from django.utils import timezone
 from apps.companies.models import Company
 from apps.core.exceptions import DomainError
 from apps.core.models import PlatformParameters
-from apps.core.notifications import notify_company
+from apps.core.notifications import notify, notify_company
 from apps.core.state_machine import record_creation, transition
 from apps.payments import services as payments
-from apps.vacancies.models import Application, Assignment, Vacancy
+from apps.vacancies.models import Application, Assignment, Vacancy, VacancyChange
 from apps.vacancies.state_machine import (
     APPLICATION_MACHINE,
     ASSIGNMENT_MACHINE,
@@ -79,16 +79,103 @@ def expire_pending_applications(vacancy, *, reason, now=None):
         )
 
 
+class VacancyLockedError(DomainError):
+    """Vaga com prestador aprovado: não pode ser editada nem removida."""
+
+
+LOCKED_MESSAGE = "Não é possível alterar: já há prestador aprovado"
+EDITABLE_FIELDS = (
+    "title",
+    "description",
+    "category",
+    "street",
+    "number",
+    "complement",
+    "district",
+    "city",
+    "state",
+    "zip_code",
+    "latitude",
+    "longitude",
+    "starts_at",
+    "ends_at",
+)
+
+
+def _ensure_changeable(vacancy):
+    """Só PUBLICADA e sem alocação (aprovada) pode ser editada ou removida."""
+    if vacancy.assignments.exists():
+        raise VacancyLockedError(LOCKED_MESSAGE)
+    if vacancy.status != V.PUBLISHED:
+        raise DomainError("Só é possível alterar uma vaga publicada.")
+
+
+@transaction.atomic
+def edit_vacancy(vacancy, *, actor=None, now=None, **fields):
+    """Edita campos permitidos da vaga PUBLICADA sem aprovados e audita cada mudança.
+
+    Valor por pessoa e número de pessoas não são editáveis após o pagamento.
+    """
+    now = now or timezone.now()
+    unknown = set(fields) - set(EDITABLE_FIELDS)
+    if unknown:
+        raise DomainError("Valor e número de pessoas não podem ser alterados após o pagamento.")
+    _ensure_changeable(vacancy)
+    changes = []
+    for name, new in fields.items():
+        old = getattr(vacancy, name)
+        if old != new:
+            changes.append((name, old, new))
+    if not changes:
+        return vacancy
+    params = PlatformParameters.get()
+    starts_at = fields.get("starts_at", vacancy.starts_at)
+    ends_at = fields.get("ends_at", vacancy.ends_at)
+    if ends_at <= starts_at:
+        raise DomainError("O fim do turno deve ser depois do início.")
+    if "starts_at" in fields and starts_at != vacancy.starts_at:
+        _check_lead_time(starts_at, now, params)
+    for name, _old, new in changes:
+        setattr(vacancy, name, new)
+    vacancy.save(update_fields=[name for name, _o, _n in changes])
+    VacancyChange.objects.bulk_create(
+        VacancyChange(
+            vacancy=vacancy,
+            user=actor,
+            changed_at=now,
+            field=name,
+            old_value="" if old is None else str(old),
+            new_value="" if new is None else str(new),
+        )
+        for name, old, new in changes
+    )
+    return vacancy
+
+
 @transaction.atomic
 def remove_vacancy(vacancy, *, actor=None, now=None):
     """PUBLICADA → CANCELADA, só sem candidatura aprovada. Estorno total."""
-    VACANCY_MACHINE.validate(vacancy.status, V.CANCELLED)
     if vacancy.assignments.exists():
-        raise DomainError("Não é possível remover uma vaga com candidatura aprovada.")
+        raise VacancyLockedError(LOCKED_MESSAGE)
+    VACANCY_MACHINE.validate(vacancy.status, V.CANCELLED)
+    if vacancy.status != V.PUBLISHED:
+        raise DomainError("Só é possível remover uma vaga publicada.")
     reason = "Vaga removida pela empresa"
+    pending = list(
+        vacancy.applications.filter(status=Application.Status.PENDING).select_related(
+            "worker__user"
+        )
+    )
     vacancy = transition(vacancy, VACANCY_MACHINE, V.CANCELLED, actor=actor, reason=reason, now=now)
     expire_pending_applications(vacancy, reason=reason, now=now)
     payments.close(vacancy.custody, actor=actor, reason=reason, now=now)
+    for application in pending:
+        notify(
+            application.worker.user,
+            "VAGA_REMOVIDA",
+            "Vaga removida",
+            f"A vaga “{vacancy.title}” foi removida pela empresa e sua candidatura expirou.",
+        )
     return vacancy
 
 

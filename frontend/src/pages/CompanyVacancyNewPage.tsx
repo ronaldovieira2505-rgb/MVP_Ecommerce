@@ -1,17 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, ApiError, brl, type Vacancy } from '../api'
+import { CATEGORIES } from '../categories'
 import { Alert, Button, Card, Field, SelectField } from '../components/ui'
-
-const CATEGORIES = [
-  { value: 'AJUDANTE_OBRA', label: 'Ajudante de obra' },
-  { value: 'CARGA_DESCARGA', label: 'Carga e descarga' },
-  { value: 'VAREJO', label: 'Varejo' },
-  { value: 'EVENTOS', label: 'Eventos' },
-  { value: 'FOTOGRAFIA', label: 'Fotografia' },
-  { value: 'LIMPEZA', label: 'Limpeza' },
-  { value: 'OUTROS', label: 'Outros' },
-]
 
 /** Converte "150,50" em centavos; 0 se não for um número válido. */
 function toCents(text: string): number {
