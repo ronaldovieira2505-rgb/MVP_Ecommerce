@@ -47,7 +47,9 @@ Arredondamento: taxa = 3% do valor em centavos, arredondada para o centavo mais 
 - Campos obrigatórios: título, categoria, descrição do escopo, endereço com ponto no mapa, início, fim, valor por pessoa (≥ R$ 1,00) e número de pessoas (≥ 1).
 - As horas do turno são as do anúncio; o pagamento é o **valor fixo do turno**, não por hora trabalhada.
 - A vaga só é publicada **depois** do pagamento (custódia).
-- **Editar ou remover** só enquanto nenhuma candidatura tiver sido aprovada. A remoção gera estorno total.
+- **Editar ou remover** só enquanto nenhuma candidatura tiver sido aprovada. A remoção gera estorno total e expira as candidaturas pendentes, avisando os candidatos. Só vagas `PUBLICADA` podem ser editadas ou removidas (não em `CANDIDATURAS_ENCERRADAS`).
+- **Campos editáveis:** título, descrição, categoria, endereço/ponto e início/fim (a antecedência mínima `min_publish_lead_minutes` vale também na edição). Cada alteração é auditada (`VacancyChange`: usuário, data, campo, valor anterior e novo).
+- **Valor por pessoa e número de pessoas não são editáveis após o pagamento** (decisão do PO). Para alterar, a empresa remove o anúncio (estorno total) e publica um novo. Não há pagamento complementar nem estorno parcial; a custódia não muda.
 
 ## 5. Candidatura e seleção
 

@@ -87,6 +87,32 @@ class Vacancy(models.Model):
         )
 
 
+class VacancyChange(models.Model):
+    """Auditoria das edições de campos da vaga (quem, quando, campo, antes, depois)."""
+
+    vacancy = models.ForeignKey(Vacancy, on_delete=models.CASCADE, related_name="changes")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name="usuário",
+    )
+    changed_at = models.DateTimeField("data", default=timezone.now)
+    field = models.CharField("campo", max_length=40)
+    old_value = models.TextField("valor anterior", blank=True)
+    new_value = models.TextField("valor novo", blank=True)
+
+    class Meta:
+        verbose_name = "alteração de vaga"
+        verbose_name_plural = "alterações de vagas"
+        ordering = ["-changed_at", "-pk"]
+
+    def __str__(self):
+        return f"{self.field} da vaga #{self.vacancy_id}"
+
+
 class Application(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDENTE", "Pendente"
