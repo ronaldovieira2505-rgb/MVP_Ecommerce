@@ -105,3 +105,39 @@ export interface NotificationList {
   unread_count: number
   results: AppNotification[]
 }
+
+export interface Vacancy {
+  id: number
+  title: string
+  category: string
+  category_label: string
+  description: string
+  street: string
+  city: string
+  state: string
+  latitude: string
+  longitude: string
+  starts_at: string
+  ends_at: string
+  pay_per_person_cents: number
+  positions: number
+  filled_positions: number
+  total_cents: number
+  retained_cents: number
+  status: string
+  status_label: string
+  payment_method?: string
+}
+
+export interface VacancyList {
+  total_retained_cents: number
+  results: Vacancy[]
+}
+
+export function brl(cents: number): string {
+  return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+export function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+}
