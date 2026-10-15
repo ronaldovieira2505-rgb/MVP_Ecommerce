@@ -1,4 +1,4 @@
-# Conecta Já — guia para o Claude
+# Conecta Já — guia do repositório
 
 Marketplace que conecta empresas (**Contratantes**, com CNPJ) a trabalhadores autônomos (**Prestadores**, pessoa física com CPF) para turnos de trabalho de curta duração no Brasil. Projeto acadêmico (repositório `MVP_Ecommerce`) com meta de virar produto depois do semestre. Escopo e ordem do MVP: `docs/mvp.md`.
 
@@ -6,10 +6,10 @@ Marketplace que conecta empresas (**Contratantes**, com CNPJ) a trabalhadores au
 
 1. Leia a issue inteira. A história e os **critérios de aceite** são o escopo: implemente só isso.
 2. Se faltarem critérios de aceite, houver ambiguidade de regra de negócio ou conflito com as regras abaixo, **não adivinhe**: comente na issue com as perguntas e pare.
-3. Trabalhe em branch (`claude/...`), nunca na `main`. Um PR por issue.
+3. Trabalhe em branch (`feature/...`), nunca na `main`. Um PR por issue.
 4. Todo PR inclui testes que cobrem os critérios de aceite e passa no CI (lint, testes, build).
-5. Descrição do PR em português: o que foi feito, como testar, o que ficou de fora, dúvidas.
-6. Não altere `.github/`, este `CLAUDE.md`, arquivos de deploy nem secrets. Se for necessário, peça na issue.
+5. Descrição do PR em português: o que foi feito, como testar, o que ficou de fora, dúvidas. Não inclua assinatura, rodapé ou menção a ferramentas de IA em commits, PRs, comentários de código ou nomes.
+6. Não altere `.github/`, este guia, arquivos de deploy nem secrets. Se for necessário, peça na issue.
 7. Não adicione dependências sem justificar no PR.
 
 ## Stack e comandos
