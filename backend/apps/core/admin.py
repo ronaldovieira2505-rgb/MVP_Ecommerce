@@ -2,11 +2,22 @@ from decimal import Decimal
 
 from django import forms
 from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.http import HttpResponseNotAllowed, HttpResponseRedirect
+from django.http import (
+    Http404,
+    HttpResponseBadRequest,
+    HttpResponseNotAllowed,
+    HttpResponseRedirect,
+)
+from django.shortcuts import get_object_or_404
+from django.template.response import TemplateResponse
 from django.urls import path, reverse
 
+from apps.companies.models import Company
+from apps.companies.services import lookup_cnpj
 from apps.core.deadlines import process_deadlines
+from apps.core.exceptions import DomainError
 from apps.core.models import (
     Notification,
     PlatformParameters,
@@ -14,6 +25,9 @@ from apps.core.models import (
     StateTransition,
     VerificationReview,
 )
+from apps.core.verification_queue import SLUG_KINDS, decide, queue_items
+from apps.workers.models import Worker, WorkerDocument
+from integrations.cnpj import CnpjLookupError
 
 admin.site.site_header = "Conecta Já — Administração"
 admin.site.site_title = "Conecta Já"
@@ -179,10 +193,142 @@ class StateTransitionAdmin(ProcessDeadlinesMixin, ReadOnlyAdmin):
     search_fields = ("entity_id", "reason")
 
 
+COMPANY_COMPARISON_FIELDS = (
+    "legal_name",
+    "trade_name",
+    "registration_status",
+    "street",
+    "number",
+    "complement",
+    "district",
+    "city",
+    "state",
+    "zip_code",
+)
+
+
+def _company_comparison(company):
+    """Dados informados × dados da BrasilAPI. Se a consulta falhar, devolve (None, motivo)."""
+    try:
+        official = lookup_cnpj(company.cnpj)
+    except CnpjLookupError as error:
+        return None, str(error)
+    rows = []
+    for name in COMPANY_COMPARISON_FIELDS:
+        informed, returned = getattr(company, name), getattr(official, name)
+        rows.append(
+            {
+                "label": Company._meta.get_field(name).verbose_name,
+                "informed": informed,
+                "returned": returned,
+                "differs": informed.strip().lower() != returned.strip().lower(),
+            }
+        )
+    return rows, ""
+
+
+def _worker_documents(worker):
+    sent = {document.kind: document for document in worker.documents.all()}
+    documents = []
+    for kind in WorkerDocument.Kind:
+        document = sent.get(kind.value)
+        documents.append(
+            {
+                "label": kind.label,
+                "url": reverse("worker-document-file", args=[worker.pk, kind.value])
+                if document
+                else "",
+                "is_pdf": bool(document) and document.file.name.lower().endswith(".pdf"),
+            }
+        )
+    return documents
+
+
 @admin.register(VerificationReview)
 class VerificationReviewAdmin(ReadOnlyAdmin):
+    """Também hospeda a “Fila de verificação” (US73) do painel administrativo."""
+
+    change_list_template = "admin/core/verificationreview_changelist.html"
     list_display = ("created_at", "subject_type", "subject_id", "decision", "reviewer")
     list_filter = ("subject_type", "decision")
+
+    def get_urls(self):
+        custom = [
+            path("fila/", self.admin_site.admin_view(self.queue_view), name="verification_queue"),
+            path(
+                "fila/<slug:slug>/<int:pk>/",
+                self.admin_site.admin_view(self.queue_detail_view),
+                name="verification_queue_detail",
+            ),
+        ]
+        return custom + super().get_urls()
+
+    def _require_reviewer(self, request):
+        if not request.user.has_perm("core.add_verificationreview"):
+            raise PermissionDenied
+
+    def queue_view(self, request):
+        self._require_reviewer(request)
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Fila de verificação",
+            "items": queue_items(),
+        }
+        return TemplateResponse(request, "admin/core/verification_queue.html", context)
+
+    def queue_detail_view(self, request, slug, pk):
+        self._require_reviewer(request)
+        kind = SLUG_KINDS.get(slug)
+        if kind is None:
+            raise Http404
+        model = Company if kind == VerificationReview.SubjectType.COMPANY else Worker
+        subject = get_object_or_404(model, pk=pk)
+        queue_url = reverse("admin:verification_queue")
+        if request.method == "POST":
+            action = request.POST.get("action")
+            if action not in ("approve", "reject"):
+                return HttpResponseBadRequest("Ação inválida.")
+            try:
+                decide(
+                    kind,
+                    subject,
+                    reviewer=request.user,
+                    approve=action == "approve",
+                    reason=request.POST.get("reason", ""),
+                )
+            except DomainError as error:
+                self.message_user(request, str(error), messages.ERROR)
+                return HttpResponseRedirect(request.path)
+            self.message_user(
+                request,
+                "Cadastro aprovado." if action == "approve" else "Cadastro rejeitado.",
+                messages.SUCCESS,
+            )
+            return HttpResponseRedirect(queue_url)
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": f"Verificação — {SLUG_KINDS[slug].label}",
+            "kind": kind,
+            "subject": subject,
+            "queue_url": queue_url,
+            "in_queue": (
+                subject.verification_status == Company.VerificationStatus.PENDING
+                if kind == VerificationReview.SubjectType.COMPANY
+                else subject.verification_status == Worker.VerificationStatus.IN_REVIEW
+            ),
+        }
+        if kind == VerificationReview.SubjectType.COMPANY:
+            rows, lookup_error = _company_comparison(subject)
+            context.update(comparison=rows, lookup_error=lookup_error)
+        else:
+            context.update(
+                documents=_worker_documents(subject),
+                email=subject.user.email,
+                masked_cpf=subject.masked_cpf,
+                masked_pix_key=subject.masked_pix_key,
+            )
+        return TemplateResponse(request, "admin/core/verification_detail.html", context)
 
 
 @admin.register(Notification)

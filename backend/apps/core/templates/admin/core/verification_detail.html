@@ -1,0 +1,72 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Início</a> &rsaquo;
+    <a href="{{ queue_url }}">Fila de verificação</a> &rsaquo;
+    {{ title }}
+  </div>
+{% endblock %}
+{% block content %}
+  {% if kind == "COMPANY" %}
+    {% if subject.data_unverified %}
+      <p class="errornote" id="data-unverified">
+        Dados não conferidos: a consulta de CNPJ falhou no cadastro. Confira os dados manualmente.
+      </p>
+    {% endif %}
+    <h2>{{ subject }}</h2>
+    <p>CNPJ: {{ subject.cnpj }} · Regime: {{ subject.get_tax_regime_display }} · Inscrição estadual: {{ subject.state_registration }}</p>
+    <h3>Dados informados × BrasilAPI</h3>
+    {% if comparison %}
+      <table id="company-comparison">
+        <thead><tr><th>Campo</th><th>Informado</th><th>BrasilAPI</th></tr></thead>
+        <tbody>
+          {% for row in comparison %}
+            <tr{% if row.differs %} class="differs" style="background:#fff3cd"{% endif %}>
+              <td>{{ row.label|capfirst }}</td><td>{{ row.informed }}</td><td>{{ row.returned }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p id="lookup-error">Não foi possível consultar a BrasilAPI agora: {{ lookup_error }}</p>
+    {% endif %}
+  {% else %}
+    <h2>{{ subject.full_name }}</h2>
+    <table id="worker-data">
+      <tr><th>CPF</th><td>{{ masked_cpf }}</td></tr>
+      <tr><th>Data de nascimento</th><td>{{ subject.birth_date|date:"d/m/Y" }}</td></tr>
+      <tr><th>E-mail</th><td>{{ email }}</td></tr>
+      <tr><th>Telefone</th><td>{{ subject.phone }}</td></tr>
+      <tr><th>Chave PIX</th><td>{{ masked_pix_key|default:"Não cadastrada" }}</td></tr>
+    </table>
+    <h3>Documentos</h3>
+    <div id="worker-documents" style="display:flex;gap:16px;flex-wrap:wrap">
+      {% for document in documents %}
+        <figure style="margin:0">
+          <figcaption>{{ document.label }}</figcaption>
+          {% if not document.url %}
+            <p>Não enviado</p>
+          {% elif document.is_pdf %}
+            <a href="{{ document.url }}" target="_blank" rel="noopener">Abrir PDF</a>
+          {% else %}
+            <img src="{{ document.url }}" alt="{{ document.label }}" style="max-width:320px;max-height:320px">
+          {% endif %}
+        </figure>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if in_queue %}
+    <form method="post" id="decision-form" style="margin-top:24px">
+      {% csrf_token %}
+      <p>
+        <label for="reason">Motivo (obrigatório na rejeição)</label><br>
+        <textarea name="reason" id="reason" rows="3" cols="60"></textarea>
+      </p>
+      <button type="submit" name="action" value="approve" class="default">Aprovar</button>
+      <button type="submit" name="action" value="reject">Rejeitar</button>
+    </form>
+  {% else %}
+    <p>Este cadastro não está mais na fila ({{ subject.get_verification_status_display }}).</p>
+  {% endif %}
+{% endblock %}
