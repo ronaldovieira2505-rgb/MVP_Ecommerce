@@ -181,7 +181,70 @@ class VacancyPayView(CompanyAreaView):
         return Response(data)
 
 
+class VacancyEditSerializer(serializers.Serializer):
+    """Campos editáveis; valor por pessoa e posições ficam de fora (somente leitura)."""
+
+    title = serializers.CharField(max_length=150, required=False)
+    category = serializers.ChoiceField(choices=Vacancy.Category.choices, required=False)
+    description = serializers.CharField(required=False)
+    street = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    number = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    complement = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    district = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    city = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    state = serializers.CharField(max_length=2, required=False, allow_blank=True)
+    zip_code = serializers.RegexField(r"^\d{0,8}$", required=False, allow_blank=True)
+    latitude = serializers.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        min_value=Decimal("-90"),
+        max_value=Decimal("90"),
+        required=False,
+    )
+    longitude = serializers.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        min_value=Decimal("-180"),
+        max_value=Decimal("180"),
+        required=False,
+    )
+    starts_at = serializers.DateTimeField(required=False)
+    ends_at = serializers.DateTimeField(required=False)
+
+
+READ_ONLY_FIELDS = ("pay_per_person_cents", "positions")
+READ_ONLY_MESSAGE = (
+    "Para alterar valor ou número de pessoas, remova o anúncio (estorno total) e publique um novo."
+)
+
+
 class VacancyDetailView(CompanyAreaView):
+    @method_decorator(csrf_protect)
+    def patch(self, request, pk):
+        company = self.company(request)
+        denied = forbidden_company(company)
+        if denied:
+            return denied
+        vacancy = self.vacancies(company).filter(pk=pk).first()
+        if vacancy is None:
+            return Response({"detail": "Vaga não encontrada."}, status=404)
+        if any(name in request.data for name in READ_ONLY_FIELDS):
+            return Response({"detail": READ_ONLY_MESSAGE}, status=400)
+        serializer = VacancyEditSerializer(data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(
+                {"detail": first_error(serializer.errors), "errors": serializer.errors}, status=400
+            )
+        try:
+            services.edit_vacancy(vacancy, actor=request.user, **serializer.validated_data)
+        except services.VacancyLockedError as error:
+            return Response({"detail": str(error)}, status=409)
+        except DomainError as error:
+            return Response({"detail": str(error)}, status=400)
+        data = serialize_vacancy(self.vacancies(company).get(pk=pk))
+        data["payment_method"] = company.preferred_payment_method
+        return Response(data)
+
     def get(self, request, pk):
         company = self.company(request)
         if company is None:
@@ -192,6 +255,25 @@ class VacancyDetailView(CompanyAreaView):
         data = serialize_vacancy(vacancy)
         data["payment_method"] = company.preferred_payment_method
         return Response(data)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class VacancyRemoveView(CompanyAreaView):
+    def post(self, request, pk):
+        company = self.company(request)
+        denied = forbidden_company(company)
+        if denied:
+            return denied
+        vacancy = self.vacancies(company).filter(pk=pk).first()
+        if vacancy is None:
+            return Response({"detail": "Vaga não encontrada."}, status=404)
+        try:
+            services.remove_vacancy(vacancy, actor=request.user)
+        except PaymentGatewayError as error:
+            return Response({"detail": str(error)}, status=502)
+        except DomainError as error:
+            return Response({"detail": str(error)}, status=409)
+        return Response(serialize_vacancy(self.vacancies(company).get(pk=pk)))
 
 
 class CompanyVacancyListView(CompanyAreaView):

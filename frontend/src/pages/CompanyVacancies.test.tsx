@@ -121,6 +121,80 @@ describe('Vagas da empresa', () => {
     expect(screen.getByText('Publicada')).toBeInTheDocument()
   })
 
+  it('edita a vaga publicada com valor e pessoas somente leitura', async () => {
+    const published = {
+      ...vacancy,
+      category: 'CARGA_DESCARGA',
+      street: '',
+      city: '',
+      state: '',
+      latitude: '-23.550520',
+      longitude: '-46.633308',
+      status: 'PUBLICADA',
+      status_label: 'Publicada',
+    }
+    let sent: Record<string, unknown> = {}
+    mockApi({
+      ...session,
+      'GET /api/vacancies/7/': () => ({ body: published }),
+      'PATCH /api/vacancies/7/': (init) => {
+        sent = JSON.parse(init?.body as string)
+        return { body: { ...published, title: 'Novo título' } }
+      },
+    })
+    renderAt('/empresa/vagas/7')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar' }))
+    expect(screen.getByLabelText('Valor por pessoa')).toHaveAttribute('readonly')
+    expect(screen.getByLabelText('Número de pessoas')).toHaveAttribute('readonly')
+    expect(screen.getByText(/remova o anúncio \(estorno total\)/)).toBeInTheDocument()
+
+    await userEvent.clear(screen.getByLabelText('Título'))
+    await userEvent.type(screen.getByLabelText('Título'), 'Novo título')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+
+    expect(await screen.findByText('Alterações salvas.')).toBeInTheDocument()
+    expect(sent.title).toBe('Novo título')
+    expect(sent).not.toHaveProperty('positions')
+    expect(sent).not.toHaveProperty('pay_per_person_cents')
+  })
+
+  it('mostra o bloqueio quando já há prestador aprovado', async () => {
+    mockApi({
+      ...session,
+      'GET /api/vacancies/7/': () => ({ body: { ...vacancy, status: 'PUBLICADA', status_label: 'Publicada' } }),
+      'POST /api/vacancies/7/remove/': () => ({
+        status: 409,
+        body: { detail: 'Não é possível alterar: já há prestador aprovado' },
+      }),
+    })
+    renderAt('/empresa/vagas/7')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Remover anúncio' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar remoção' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Não é possível alterar: já há prestador aprovado',
+    )
+  })
+
+  it('remove o anúncio após confirmar', async () => {
+    mockApi({
+      ...session,
+      'GET /api/vacancies/7/': () => ({ body: { ...vacancy, status: 'PUBLICADA', status_label: 'Publicada' } }),
+      'POST /api/vacancies/7/remove/': () => ({
+        body: { ...vacancy, status: 'CANCELADA', status_label: 'Cancelada' },
+      }),
+    })
+    renderAt('/empresa/vagas/7')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Remover anúncio' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar remoção' }))
+
+    expect(await screen.findByText('Anúncio removido. O valor foi estornado.')).toBeInTheDocument()
+    expect(screen.getByText('Cancelada')).toBeInTheDocument()
+  })
+
   it('lista as vagas com posições e total retido', async () => {
     mockApi({
       ...session,
