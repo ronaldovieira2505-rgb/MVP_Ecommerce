@@ -1,0 +1,30 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Início</a> &rsaquo;
+    <a href="{% url 'admin:core_verificationreview_changelist' %}">Análises de verificação</a> &rsaquo;
+    Fila de verificação
+  </div>
+{% endblock %}
+{% block content %}
+  <p>Cadastros aguardando análise, em ordem de chegada (o mais antigo primeiro).</p>
+  {% if items %}
+    <table id="verification-queue">
+      <thead>
+        <tr><th>Tipo</th><th>Nome</th><th>Chegada</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr>
+            <td>{{ item.label }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.arrived_at|date:"d/m/Y H:i" }}</td>
+            <td><a href="{% url 'admin:verification_queue_detail' item.slug item.pk %}">Analisar</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Nenhum cadastro pendente de verificação.</p>
+  {% endif %}
+{% endblock %}
