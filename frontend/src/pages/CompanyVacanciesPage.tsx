@@ -1,9 +1,34 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, brl, formatDateTime, type VacancyList } from '../api'
-import { Alert, Badge, Card } from '../components/ui'
+import { api, brl, formatShift, type Vacancy, type VacancyList } from '../api'
+import { Alert, Badge, Card, Slots } from '../components/ui'
+import { badgeToneFor, toneFor } from '../status'
 
-/** Minhas vagas: status, data, valor, posições preenchidas/total e total retido. */
+/** Uma vaga por ficha: estado na lombada, valor por pessoa e posições. */
+function VacancyRow({ vacancy }: { vacancy: Vacancy }) {
+  return (
+    <li>
+      <article className={`row row-${toneFor(vacancy.status)}`}>
+        <div>
+          <h2 className="row-titulo">
+            <Link to={`/empresa/vagas/${vacancy.id}`}>{vacancy.title}</Link>
+            <Badge tone={badgeToneFor(vacancy.status)}>{vacancy.status_label}</Badge>
+          </h2>
+          <p className="row-quando">{formatShift(vacancy.starts_at, vacancy.ends_at)}</p>
+        </div>
+        <div className="row-lado">
+          <span className="row-valor">
+            {brl(vacancy.pay_per_person_cents)}
+            <small>por pessoa</small>
+          </span>
+          <Slots filled={vacancy.filled_positions} total={vacancy.positions} />
+        </div>
+      </article>
+    </li>
+  )
+}
+
+/** Minhas vagas: total retido em custódia e uma ficha por vaga. */
 export default function CompanyVacanciesPage() {
   const [data, setData] = useState<VacancyList | null>(null)
   const [error, setError] = useState('')
@@ -17,31 +42,46 @@ export default function CompanyVacanciesPage() {
   if (!data && !error) return <p role="status">Carregando...</p>
 
   return (
-    <Card>
-      <h1>Minhas vagas</h1>
-      <p>
-        <Link to="/empresa/vagas/nova">Nova vaga</Link>
-      </p>
+    <>
+      <Card tone="carimbo">
+        <h1>Minhas vagas</h1>
+        <p>
+          Total retido em custódia
+          <strong className="dinheiro">{brl(data?.total_retained_cents ?? 0)}</strong>
+          <span className="dinheiro-nota">
+            O dinheiro fica no PSP até a presença ser confirmada.
+          </span>
+        </p>
+        <div className="acoes">
+          <Link to="/empresa/vagas/nova" className="btn btn-primary">
+            Nova vaga
+          </Link>
+        </div>
+      </Card>
+
       {error && <Alert tone="error">{error}</Alert>}
-      {data && (
-        <>
-          <p>
-            Total retido em custódia: <strong>{brl(data.total_retained_cents)}</strong>
-          </p>
-          {data.results.length === 0 && <p>Você ainda não publicou vagas.</p>}
-          <ul>
+
+      {data &&
+        (data.results.length === 0 ? (
+          <Card>
+            <div className="vazio">
+              <h2>Publique o primeiro turno</h2>
+              <p>
+                Descreva o serviço, diga quantas pessoas precisa e pague em custódia. A vaga fica
+                visível para os prestadores aprovados assim que o pagamento é confirmado.
+              </p>
+              <Link to="/empresa/vagas/nova" className="btn btn-primary">
+                Nova vaga
+              </Link>
+            </div>
+          </Card>
+        ) : (
+          <ul className="row-list">
             {data.results.map((v) => (
-              <li key={v.id}>
-                <Link to={`/empresa/vagas/${v.id}`}>{v.title}</Link> <Badge>{v.status_label}</Badge>
-                <div>
-                  {formatDateTime(v.starts_at)} · {brl(v.pay_per_person_cents)} por pessoa ·{' '}
-                  {v.filled_positions}/{v.positions} posições
-                </div>
-              </li>
+              <VacancyRow key={v.id} vacancy={v} />
             ))}
           </ul>
-        </>
-      )}
-    </Card>
+        ))}
+    </>
   )
 }

@@ -26,35 +26,46 @@ export default function LoginPage() {
   }
 
   return (
-    <Card>
-      <h1>Entrar</h1>
-      {error && <Alert tone="error">{error}</Alert>}
-      <form onSubmit={handleSubmit}>
-        <Field
-          label="E-mail"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <Field
-          label="Senha"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <Button type="submit" block disabled={submitting}>
-          Entrar
-        </Button>
-      </form>
-      <p>
-        <Link to="/cadastro" className="btn btn-secondary btn-block">
-          Criar conta
-        </Link>
-      </p>
-    </Card>
+    <div className="entrada">
+      <Card tone="colete">
+        <h1>Entrar</h1>
+        {error && <Alert tone="error">{error}</Alert>}
+        <form onSubmit={handleSubmit}>
+          <Field
+            label="E-mail"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <Field
+            label="Senha"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Button type="submit" block disabled={submitting}>
+            Entrar
+          </Button>
+        </form>
+        <div className="acoes">
+          <Link to="/cadastro" className="btn btn-secondary btn-block">
+            Criar conta
+          </Link>
+        </div>
+      </Card>
+      <aside className="promessa">
+        <p className="promessa-garantia">Pagamento garantido</p>
+        <h2>O valor do turno é retido antes de alguém começar a trabalhar.</h2>
+        <p>
+          A empresa paga no momento em que publica a vaga. O dinheiro fica em custódia e só é
+          liberado para o prestador quando a presença é confirmada.
+        </p>
+        <p>Turnos de carga e descarga, obra, limpeza, varejo e eventos.</p>
+      </aside>
+    </div>
   )
 }
