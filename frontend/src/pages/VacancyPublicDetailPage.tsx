@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api, brl, formatShift, type VacancyPublicDetail } from '../api'
+import { api, brl, formatShift, type JobItem, type VacancyPublicDetail } from '../api'
 import { Alert, Badge, Button, Card } from '../components/ui'
 
 /** Detalhe da vaga para o prestador: descrição, endereço com mapa e valor líquido (US17). */
@@ -8,6 +8,8 @@ export default function VacancyPublicDetailPage() {
   const { id } = useParams()
   const [vacancy, setVacancy] = useState<VacancyPublicDetail | null>(null)
   const [error, setError] = useState('')
+  const [applying, setApplying] = useState(false)
+  const [applyError, setApplyError] = useState('')
 
   useEffect(() => {
     api<VacancyPublicDetail>(`/api/vacancies/${id}/`)
@@ -15,8 +17,34 @@ export default function VacancyPublicDetailPage() {
       .catch((err: Error) => setError(err.message))
   }, [id])
 
+  async function handleApply() {
+    setApplying(true)
+    setApplyError('')
+    try {
+      const application = await api<JobItem>(`/api/vacancies/${id}/apply/`, { method: 'POST' })
+      setVacancy((current) =>
+        current && {
+          ...current,
+          can_apply: false,
+          apply_blocker: 'Você já se candidatou a esta vaga.',
+          my_application: {
+            id: application.id,
+            status: application.status,
+            status_label: application.status_label,
+          },
+        },
+      )
+    } catch (err) {
+      setApplyError((err as Error).message)
+    } finally {
+      setApplying(false)
+    }
+  }
+
   if (error) return <Alert tone="error">{error}</Alert>
   if (!vacancy) return <p role="status">Carregando...</p>
+
+  const sent = Boolean(vacancy.my_application)
 
   const address = [
     [vacancy.street, vacancy.number].filter(Boolean).join(', '),
@@ -85,11 +113,18 @@ export default function VacancyPublicDetailPage() {
           </dd>
         </div>
       </dl>
-      {/* A candidatura em si chega com a US37. */}
       <div className="acoes">
-        <Button disabled={!vacancy.can_apply}>Quero esta vaga</Button>
+        <Button disabled={!vacancy.can_apply || applying} onClick={handleApply}>
+          {sent ? 'Candidatura enviada' : 'Quero esta vaga'}
+        </Button>
       </div>
-      {vacancy.apply_blocker && <Alert>{vacancy.apply_blocker}</Alert>}
+      {sent && vacancy.my_application?.status === 'PENDENTE' && (
+        <Alert tone="success">
+          Candidatura enviada! Acompanhe em <Link to="/meus-trabalhos">Meus trabalhos</Link>.
+        </Alert>
+      )}
+      {applyError && <Alert tone="error">{applyError}</Alert>}
+      {vacancy.apply_blocker && !applyError && <Alert>{vacancy.apply_blocker}</Alert>}
     </Card>
   )
 }

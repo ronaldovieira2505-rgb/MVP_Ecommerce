@@ -166,6 +166,29 @@ export interface VacancyPublicDetail extends VacancyCard {
   longitude: string
   can_apply: boolean
   apply_blocker: string | null
+  my_application: { id: number; status: string; status_label: string } | null
+}
+
+/** Item de "Meus trabalhos": uma candidatura ou uma alocação (US37/US38). */
+export interface JobItem {
+  kind: 'application' | 'assignment'
+  id: number
+  vacancy_id: number
+  title: string
+  company_name: string
+  starts_at: string
+  ends_at: string
+  gross_cents: number
+  net_cents: number
+  status: string
+  status_label: string
+  can_withdraw: boolean
+}
+
+export type JobGroupKey = 'waiting' | 'upcoming' | 'in_progress' | 'completed' | 'closed'
+
+export interface MyJobs {
+  groups: Record<JobGroupKey, JobItem[]>
 }
 
 export function brl(cents: number): string {

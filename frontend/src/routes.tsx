@@ -7,6 +7,7 @@ import CompanyVacanciesPage from './pages/CompanyVacanciesPage'
 import CompanyVacancyDetailPage from './pages/CompanyVacancyDetailPage'
 import CompanyVacancyNewPage from './pages/CompanyVacancyNewPage'
 import LoginPage from './pages/LoginPage'
+import MyJobsPage from './pages/MyJobsPage'
 import Placeholder from './pages/Placeholder'
 import VacancyPublicDetailPage from './pages/VacancyPublicDetailPage'
 import VacancySearchPage from './pages/VacancySearchPage'
@@ -64,6 +65,7 @@ export default function AppRoutes() {
         </Route>
         <Route element={<RequireRole role="WORKER" />}>
           <Route path="prestador/vagas" element={<Navigate to="/vagas" replace />} />
+          <Route path="meus-trabalhos" element={<MyJobsPage />} />
           <Route path="prestador/perfil" element={<WorkerHomePage />} />
           <Route path="perfil/documentos" element={<WorkerDocumentsPage />} />
           <Route path="perfil/pix" element={<WorkerPixPage />} />

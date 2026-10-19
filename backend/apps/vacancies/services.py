@@ -67,7 +67,7 @@ def cancel_unpaid_vacancy(vacancy, *, actor=None, reason="Empresa desistiu", now
     return transition(vacancy, VACANCY_MACHINE, V.CANCELLED, actor=actor, reason=reason, now=now)
 
 
-def expire_pending_applications(vacancy, *, reason, now=None):
+def expire_pending_applications(vacancy, *, reason, now=None, notify_workers=True):
     pending = vacancy.applications.filter(status=Application.Status.PENDING)
     for application in pending:
         transition(
@@ -76,6 +76,15 @@ def expire_pending_applications(vacancy, *, reason, now=None):
             Application.Status.EXPIRED,
             reason=reason,
             now=now,
+        )
+        if not notify_workers:
+            continue
+        notify(
+            application.worker.user,
+            "CANDIDATURA_EXPIRADA",
+            "Candidatura encerrada",
+            f"A vaga “{vacancy.title}” foi encerrada e sua candidatura expirou.",
+            link="/meus-trabalhos",
         )
 
 
@@ -167,7 +176,7 @@ def remove_vacancy(vacancy, *, actor=None, now=None):
         )
     )
     vacancy = transition(vacancy, VACANCY_MACHINE, V.CANCELLED, actor=actor, reason=reason, now=now)
-    expire_pending_applications(vacancy, reason=reason, now=now)
+    expire_pending_applications(vacancy, reason=reason, now=now, notify_workers=False)
     payments.close(vacancy.custody, actor=actor, reason=reason, now=now)
     for application in pending:
         notify(
@@ -175,6 +184,7 @@ def remove_vacancy(vacancy, *, actor=None, now=None):
             "VAGA_REMOVIDA",
             "Vaga removida",
             f"A vaga “{vacancy.title}” foi removida pela empresa e sua candidatura expirou.",
+            link="/meus-trabalhos",
         )
     return vacancy
 

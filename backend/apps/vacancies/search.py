@@ -11,7 +11,8 @@ from django.utils import timezone
 from apps.accounts.models import Role
 from apps.core.exceptions import DomainError
 from apps.core.models import PlatformParameters
-from apps.vacancies.models import Assignment, Vacancy
+from apps.vacancies.application_services import has_overlap
+from apps.vacancies.models import Application, Assignment, Vacancy
 from apps.workers.models import Worker
 from integrations.geo import haversine_distance_m
 
@@ -158,8 +159,28 @@ def serialize_card(vacancy, distance_m=None, params=None):
     }
 
 
+def detail_vacancy(pk):
+    """Vaga paga e ainda em curso, mesmo sem aceitar candidaturas (o botão explica o motivo)."""
+    return (
+        Vacancy.objects.filter(
+            pk=pk, status__in=(V.PUBLISHED, V.APPLICATIONS_CLOSED, V.IN_PROGRESS)
+        )
+        .select_related("company", "custody")
+        .annotate(
+            filled=Count(
+                "assignments", filter=Q(assignments__status__in=Assignment.ACTIVE_STATUSES)
+            )
+        )
+        .first()
+    )
+
+
 def serialize_detail(vacancy, user, now=None):
     data = serialize_card(vacancy)
+    worker = Worker.objects.filter(user=user).first() if user and user.is_authenticated else None
+    mine = (
+        Application.objects.filter(vacancy=vacancy, worker=worker).first() if worker else None
+    )
     data.update(
         {
             "description": vacancy.description,
@@ -169,14 +190,19 @@ def serialize_detail(vacancy, user, now=None):
             "zip_code": vacancy.zip_code,
             "latitude": str(vacancy.latitude),
             "longitude": str(vacancy.longitude),
-            "apply_blocker": apply_blocker(user, now),
+            "apply_blocker": apply_blocker(user, now, vacancy),
+            "my_application": (
+                {"id": mine.pk, "status": mine.status, "status_label": mine.get_status_display()}
+                if mine
+                else None
+            ),
         }
     )
     data["can_apply"] = data["apply_blocker"] is None
     return data
 
 
-def apply_blocker(user, now=None):
+def apply_blocker(user, now=None, vacancy=None):
     """Explica o que falta para o usuário poder se candidatar (None = pode)."""
     now = now or timezone.now()
     if not user or not user.is_authenticated:
@@ -197,6 +223,15 @@ def apply_blocker(user, now=None):
     if not worker.pix_key:
         return "Cadastre sua chave PIX para se candidatar."
     if worker.is_suspended(now):
-        until = worker.suspended_until.astimezone(LOCAL_TZ).strftime("%d/%m/%Y")
-        return f"Sua conta está suspensa até {until}."
+        return worker.suspension_message
+    if vacancy is None:
+        return None
+    if Application.objects.filter(vacancy=vacancy, worker=worker).exists():
+        return "Você já se candidatou a esta vaga."
+    if not vacancy.accepts_applications(now):
+        return "As candidaturas desta vaga estão encerradas."
+    if vacancy.filled_positions >= vacancy.positions:
+        return "Esta vaga está lotada."
+    if has_overlap(worker, vacancy):
+        return "Você já tem um turno nesse horário."
     return None
