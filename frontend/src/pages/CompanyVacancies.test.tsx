@@ -29,6 +29,9 @@ const session: Record<string, Handler> = {
     body: { id: 1, name: 'Acme', email: 'a@acme.com', role: 'COMPANY', verification_status: 'APROVADA' },
   }),
   'GET /api/notifications/': () => ({ body: { unread_count: 0, results: [] } }),
+  'GET /api/vacancies/7/candidates/': () => ({
+    body: { positions: 3, filled_positions: 0, team_complete: false, candidates: [], team: [] },
+  }),
 }
 
 const vacancy = {

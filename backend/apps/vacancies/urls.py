@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views, worker_views
+from . import candidate_views, views, worker_views
 
 urlpatterns = [
     path(
@@ -12,6 +12,26 @@ urlpatterns = [
         "applications/<int:pk>/withdraw/",
         worker_views.ApplicationWithdrawView.as_view(),
         name="application-withdraw",
+    ),
+    path(
+        "vacancies/<int:pk>/candidates/",
+        candidate_views.VacancyCandidatesView.as_view(),
+        name="vacancy-candidates",
+    ),
+    path(
+        "applications/<int:pk>/approve/",
+        candidate_views.ApplicationApproveView.as_view(),
+        name="application-approve",
+    ),
+    path(
+        "applications/<int:pk>/reject/",
+        candidate_views.ApplicationRejectView.as_view(),
+        name="application-reject",
+    ),
+    path(
+        "applications/<int:pk>/photo/",
+        candidate_views.ApplicationPhotoView.as_view(),
+        name="application-photo",
     ),
     path("workers/me/jobs/", worker_views.WorkerJobsView.as_view(), name="worker-jobs"),
     path("vacancies/", views.VacancyCreateView.as_view(), name="vacancy-create"),
