@@ -64,7 +64,7 @@ describe('Cadastro de empresa', () => {
     vi.unstubAllGlobals()
   })
 
-  it('preenche os dados pela consulta ao sair do campo e deixa editar', async () => {
+  it('preenche a razão social pela consulta ao sair do campo e deixa editar', async () => {
     mockApi({ 'GET /api/auth/me/': anonymous, [`GET /api/cnpj/${CNPJ}/`]: found })
     renderSignup()
 
@@ -74,9 +74,8 @@ describe('Cadastro de empresa', () => {
 
     const legalName = await screen.findByLabelText('Razão social')
     expect(legalName).toHaveValue('Padaria Pão Quente LTDA')
-    expect(screen.getByLabelText('Nome fantasia')).toHaveValue('Pão Quente')
-    expect(screen.getByLabelText('Situação cadastral')).toHaveValue('ATIVA')
-    expect(screen.getByLabelText('Logradouro')).toHaveValue('Rua das Flores')
+    expect(screen.getByLabelText('Regime tributário')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Logradouro')).not.toBeInTheDocument()
     await userEvent.clear(legalName)
     await userEvent.type(legalName, 'Outro Nome')
     expect(legalName).toHaveValue('Outro Nome')
@@ -129,7 +128,7 @@ describe('Cadastro de empresa', () => {
     expect(legalName).toHaveValue('Empresa Manual LTDA')
   })
 
-  it('conclui o cadastro em 4 etapas e mostra o aviso de cadastro em análise', async () => {
+  it('conclui o cadastro em 3 etapas e mostra o aviso de cadastro em análise', async () => {
     let registered: unknown
     mockApi({
       'GET /api/auth/me/': anonymous,
@@ -153,16 +152,14 @@ describe('Cadastro de empresa', () => {
     renderSignup()
 
     await typeCnpjAndContinue(CNPJ)
-    await userEvent.type(await screen.findByLabelText('Inscrição estadual (ou ISENTO)'), 'ISENTO')
+    expect(await screen.findByText(/Etapa 2 de 3/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Razão social')).toHaveValue('Padaria Pão Quente LTDA')
     await userEvent.selectOptions(screen.getByLabelText('Regime tributário'), 'SIMPLES')
     await userEvent.click(screen.getByRole('button', { name: 'Continuar' }))
 
-    await userEvent.type(await screen.findByLabelText('Telefone'), '11999998888')
-    await userEvent.selectOptions(screen.getByLabelText('Meio de pagamento preferido'), 'PIX')
+    expect(await screen.findByText(/Etapa 3 de 3/)).toBeInTheDocument()
     expect(screen.queryByLabelText(/cartão|número do cartão/i)).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }))
-
-    await userEvent.type(await screen.findByLabelText('Nome do responsável'), 'Maria Souza')
+    await userEvent.type(screen.getByLabelText('Nome'), 'Maria Souza')
     await userEvent.type(screen.getByLabelText('E-mail'), 'maria@example.com')
     await userEvent.type(screen.getByLabelText('Senha'), 'senha-forte-123')
     await userEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
@@ -173,10 +170,8 @@ describe('Cadastro de empresa', () => {
     expect(registered).toMatchObject({
       cnpj: CNPJ,
       legal_name: 'Padaria Pão Quente LTDA',
-      state_registration: 'ISENTO',
       tax_regime: 'SIMPLES',
-      phone: '11999998888',
-      preferred_payment_method: 'PIX',
+      city: 'São Paulo',
       owner_name: 'Maria Souza',
       email: 'maria@example.com',
     })

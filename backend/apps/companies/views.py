@@ -55,10 +55,15 @@ class CompanyRegistrationSerializer(serializers.Serializer):
     city = serializers.CharField(max_length=100, required=False, allow_blank=True)
     state = serializers.CharField(max_length=2, required=False, allow_blank=True)
     zip_code = serializers.CharField(max_length=9, required=False, allow_blank=True)
-    state_registration = serializers.CharField(max_length=30)
+    # Cadastro simplificado: inscrição estadual, telefone e meio de pagamento são opcionais.
+    state_registration = serializers.CharField(
+        max_length=30, required=False, allow_blank=True, default=""
+    )
     tax_regime = serializers.ChoiceField(choices=Company.TaxRegime.choices)
-    phone = serializers.CharField(max_length=20)
-    preferred_payment_method = serializers.ChoiceField(choices=Company.PaymentMethod.choices)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
+    preferred_payment_method = serializers.ChoiceField(
+        choices=Company.PaymentMethod.choices, required=False, allow_blank=True, default=""
+    )
     owner_name = serializers.CharField(max_length=150)
     email = serializers.EmailField(max_length=150)
     password = serializers.CharField(min_length=8, max_length=128, trim_whitespace=False)
