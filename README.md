@@ -59,6 +59,40 @@ npm --prefix frontend run dev
 Abra <http://localhost:5173>. O Vite encaminha `/api` para `http://localhost:8000`
 (mude com `VITE_API_PROXY_TARGET`). A página inicial mostra o status de `/api/health/`.
 
+## Processamento de prazos
+
+As transições por prazo (encerrar candidaturas, falta, check-out automático, aprovação
+automática etc.) são aplicadas pelo `processar_prazos`. Em um terceiro terminal do PowerShell,
+com o ambiente virtual ativo e as variáveis do backend definidas:
+
+```powershell
+python backend\manage.py processar_prazos --loop 15
+```
+
+Ele repete a cada 15 segundos até você apertar `Ctrl+C`. Sem `--loop`, roda uma vez.
+
+## Dados de demonstração
+
+```powershell
+python backend\manage.py seed_demo
+python backend\manage.py seed_demo --prazos-curtos
+```
+
+Cria 1 admin, 2 empresas aprovadas, 3 prestadores aprovados (com PIX), 1 empresa e 1 prestador
+pendentes na fila e 4 vagas em estados variados, em São Paulo. É seguro rodar de novo: não
+duplica dados. Com `--prazos-curtos`, os prazos ficam em minutos para a demonstração ao vivo.
+As credenciais aparecem no terminal ao final:
+
+| Perfil | E-mail | Senha |
+|---|---|---|
+| Admin (`/admin`) | `admin@exemplo.com` | `Demo@12345` |
+| Empresas aprovadas | `empresa1@exemplo.com`, `empresa2@exemplo.com` | `Demo@12345` |
+| Empresa pendente | `empresa.pendente@exemplo.com` | `Demo@12345` |
+| Prestadores aprovados | `prestador1@exemplo.com`, `prestador2@exemplo.com`, `prestador3@exemplo.com` | `Demo@12345` |
+| Prestador pendente | `prestador.pendente@exemplo.com` | `Demo@12345` |
+
+O passo a passo da apresentação está em `docs/roteiro-demo.md`.
+
 ## Testes e qualidade
 
 Backend (com o ambiente virtual ativo e as variáveis acima definidas):
