@@ -188,3 +188,5 @@ backend/staticfiles/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+# Uploads privados (documentos e selfies), gerados localmente
+backend/private_media/
