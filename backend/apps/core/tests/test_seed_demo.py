@@ -1,5 +1,8 @@
 import re
+from datetime import datetime, timedelta
 from io import StringIO
+from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -118,3 +121,15 @@ def test_catalog_has_varied_published_ads_with_urgent_one():
     assert len({v.company_id for v in published}) >= 4
     assert published.filter(reopened=True).count() == 1
     assert all(v.starts_at > timezone.now() for v in published)
+
+
+def test_catalog_respects_lead_time_when_run_at_night():
+    # 20:00 em São Paulo: os turnos de "amanhã" às 6h e 7h ficariam a menos de 12h.
+    night = datetime(2026, 10, 19, 20, 0, tzinfo=ZoneInfo("America/Sao_Paulo"))
+
+    with patch("django.utils.timezone.now", return_value=night):
+        run_seed()
+
+    lead = timedelta(minutes=PlatformParameters.get().min_publish_lead_minutes)
+    assert Vacancy.objects.count() == 14
+    assert all(v.starts_at >= night + lead for v in Vacancy.objects.all())

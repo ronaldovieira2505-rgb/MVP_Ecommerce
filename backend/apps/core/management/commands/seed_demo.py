@@ -435,12 +435,17 @@ class Command(BaseCommand):
 
     def _catalogo(self, companies, now):
         """Anúncios de exemplo variados (categorias, bairros, valores). Idempotente por título."""
+        min_start = now + timedelta(minutes=PlatformParameters.get().min_publish_lead_minutes)
         for company_index, days, hour, hours, data in CATALOGO:
             fields = dict(data)
             urgent = fields.pop("urgente", False)
             title = fields.pop("title")
-            day = timezone.localdate() + timedelta(days=days)
+            day = timezone.localdate(now) + timedelta(days=days)
             starts_at = datetime.combine(day, time(hour, 0), tzinfo=LOCAL_TZ)
+            # Rodando à noite, um turno cedo de "amanhã" fica sem a antecedência mínima.
+            while starts_at < min_start:
+                day += timedelta(days=1)
+                starts_at = datetime.combine(day, time(hour, 0), tzinfo=LOCAL_TZ)
             vacancy, created = self._vacancy(
                 companies[company_index],
                 title,
