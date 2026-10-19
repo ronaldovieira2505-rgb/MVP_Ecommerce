@@ -84,7 +84,7 @@ export default function WorkerDocumentsPage() {
           capture="user"
           onChange={(e) => setSelfie(e.target.files?.[0] ?? null)}
         />
-        <Button type="submit" block disabled={submitting}>
+        <Button type="submit" block busy={submitting}>
           Enviar
         </Button>
       </form>

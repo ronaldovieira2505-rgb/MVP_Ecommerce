@@ -871,3 +871,262 @@ a {
 .sub {
   color: var(--tinta-media);
 }
+
+/* ─── Fluidez: respostas visuais às ações ───────────────────────
+   Regra: o movimento só aparece quando responde a algo que a pessoa fez
+   (trocar de tela, avançar etapa, enviar, atualizar a busca). Quem pede
+   menos movimento no sistema operacional recebe a mesma tela, sem animação. */
+
+/* Botões: a mudança de cor acompanha o ponteiro e o clique "afunda" 1px. */
+.btn {
+  touch-action: manipulation;
+  transition:
+    background-color 120ms ease-out,
+    color 120ms ease-out,
+    border-color 120ms ease-out,
+    transform 80ms ease-out;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Enviando: o botão trava, mantém o texto e ganha o indicador de andamento. */
+.btn-busy,
+.btn-busy:disabled {
+  gap: var(--espaco-2);
+  opacity: 0.85;
+  cursor: progress;
+}
+
+.btn-busy::before {
+  content: "";
+  width: 0.95em;
+  height: 0.95em;
+  border: 2px solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+}
+
+/* A ficha inteira é clicável: o link do título cobre a linha toda. */
+.row {
+  position: relative;
+  transition:
+    border-color 120ms ease-out,
+    background-color 120ms ease-out;
+}
+
+.row-titulo a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.row-titulo a:focus-visible {
+  outline: none;
+}
+
+.row:has(.row-titulo a:focus-visible) {
+  outline: 3px solid var(--colete);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .row:hover {
+    border-top-color: var(--tinta);
+    border-right-color: var(--tinta);
+    border-bottom-color: var(--tinta);
+    background: #fbfcf7;
+  }
+}
+
+/* Busca atualizando: a lista atual fica visível, só esmaece até chegar a nova. */
+.row-list[data-atualizando] {
+  opacity: 0.5;
+  transition: opacity 150ms ease-out;
+}
+
+/* Carregando: fichas em branco no formato do conteúdo que vai chegar.
+   Só aparecem se a espera passar de 150 ms, para não piscar em carregamentos rápidos. */
+.carregando {
+  display: grid;
+  gap: var(--espaco-3);
+  opacity: 0;
+  animation: surge 200ms ease-out 150ms forwards;
+}
+
+.ficha-vazia {
+  display: grid;
+  gap: var(--espaco-2);
+  padding: var(--espaco-4) var(--espaco-5);
+  background: var(--ficha);
+  border: 1px solid var(--regua);
+  border-left: var(--lombada) solid var(--concreto-linha);
+  border-radius: var(--raio);
+}
+
+.traco {
+  display: block;
+  height: 0.8rem;
+  width: 70%;
+  background: var(--concreto);
+  border-radius: var(--raio);
+}
+
+.traco-titulo {
+  height: 1.2rem;
+  width: 55%;
+}
+
+.traco-curto {
+  width: 35%;
+}
+
+/* Filtros da busca: no celular só o campo de texto fica à vista; o resto abre no botão. */
+.filtros-extra {
+  display: none;
+}
+
+.filtros-extra.aberto {
+  display: block;
+}
+
+@media (min-width: 640px) {
+  .filtros-extra,
+  .filtros-extra.aberto {
+    display: contents;
+  }
+
+  .so-celular {
+    display: none;
+  }
+}
+
+/* Formulário em blocos: cada bloco responde a uma pergunta (o quê, onde, quando). */
+.bloco {
+  min-width: 0;
+  margin: 0 0 var(--espaco-5);
+  padding: 0;
+  border: 0;
+}
+
+.bloco + .bloco {
+  margin-top: var(--espaco-6);
+}
+
+/* O total acompanha a largura da grade do formulário. */
+.bloco ~ .total {
+  max-width: none;
+}
+
+.bloco legend {
+  padding: 0;
+  margin-bottom: var(--espaco-3);
+  font-family: var(--fonte-titulo);
+  font-size: var(--escala-media);
+}
+
+.bloco .field {
+  max-width: none;
+}
+
+.grade {
+  display: grid;
+  gap: 0 var(--espaco-4);
+}
+
+@media (min-width: 640px) {
+  .grade-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .grade-endereco,
+  .grade-cidade {
+    grid-template-columns: 3fr 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Troca de tela: o conteúdo novo entra, deixando claro que a página mudou. */
+  .tela {
+    animation: entra-tela 180ms ease-out;
+  }
+
+  /* Etapas do cadastro: a próxima etapa desliza no sentido do avanço. */
+  .passo {
+    animation: entra-passo 160ms ease-out;
+  }
+
+  .filtros-extra.aberto {
+    animation: abre-painel 140ms ease-out;
+  }
+
+  .btn-busy::before {
+    animation: gira 700ms linear infinite;
+  }
+
+  .traco {
+    background: linear-gradient(90deg, var(--concreto) 0%, #f3f5f2 50%, var(--concreto) 100%);
+    background-size: 200% 100%;
+    animation: brilho 1.2s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carregando {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+@keyframes entra-tela {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes entra-passo {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+}
+
+@keyframes surge {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes gira {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes brilho {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* Menu no celular: cabe os quatro itens sem cortar; se faltar espaço, rola sem barra. */
+@media (max-width: 639px) {
+  .app-nav {
+    gap: var(--espaco-2);
+    scrollbar-width: none;
+  }
+
+  .app-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-nav a {
+    font-size: 0.85rem;
+  }
+}

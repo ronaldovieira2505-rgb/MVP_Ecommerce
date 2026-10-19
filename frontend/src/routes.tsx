@@ -2,6 +2,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import type { Role } from './api'
 import { homePathFor, useAuth } from './authContext'
 import Layout from './components/Layout'
+import { Loading } from './components/ui'
 import CompanyConfirmPresencePage from './pages/CompanyConfirmPresencePage'
 import CompanySignupPage from './pages/CompanySignupPage'
 import CompanyVacanciesPage from './pages/CompanyVacanciesPage'
@@ -22,7 +23,7 @@ import WorkerSignupPage from './pages/WorkerSignupPage'
 /** Manda para o login quem não está autenticado e para a home do papel quem não tem acesso. */
 function RequireRole({ role }: { role: Role }) {
   const { user, loading } = useAuth()
-  if (loading) return <p role="status">Carregando...</p>
+  if (loading) return <Loading rows={1} />
   if (!user) return <Navigate to="/login" replace />
   if (user.role !== role) return <Navigate to={homePathFor(user.role)} replace />
   return <Outlet />
@@ -30,7 +31,7 @@ function RequireRole({ role }: { role: Role }) {
 
 function Home() {
   const { user, loading } = useAuth()
-  if (loading) return <p role="status">Carregando...</p>
+  if (loading) return <Loading rows={1} />
   return <Navigate to={user ? homePathFor(user.role) : '/login'} replace />
 }
 

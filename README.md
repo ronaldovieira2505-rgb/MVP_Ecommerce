@@ -47,6 +47,21 @@ O backend não carrega o arquivo `.env` sozinho; as variáveis precisam estar no
 (veja `.env.example` para a lista). Teste em <http://localhost:8000/api/health/>: deve
 responder `200` com `{"status": "ok"}`.
 
+## Dados de exemplo
+
+Com o backend configurado (variáveis acima), rode uma vez:
+
+```powershell
+python backend\manage.py seed_demo
+```
+
+Cria 14 vagas (13 publicadas e pagas em custódia no PSP simulado, 1 aguardando pagamento) em
+várias categorias e bairros de São Paulo, incluindo uma "Urgente". Cria também empresas,
+prestadores e um admin. Senha de todas as contas: `Demo@12345`. A lista de e-mails aparece no
+final do comando e em `docs/roteiro-demo.md`. As vagas começam de 1 a 7 dias depois do dia em
+que o comando roda. Rodar de novo não duplica nada; para recomeçar do zero com SQLite, apague o
+`db.sqlite3` e rode `migrate` e o comando.
+
 ## Frontend
 
 Em outro terminal:

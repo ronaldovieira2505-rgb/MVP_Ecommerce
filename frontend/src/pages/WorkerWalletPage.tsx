@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, brl, formatDateTime, formatShift, type Wallet } from '../api'
-import { Alert, Badge, Card } from '../components/ui'
+import { Alert, Badge, Card, Loading } from '../components/ui'
 
 /** Carteira do prestador (US60): a receber, liberado e taxas retidas. */
 export default function WorkerWalletPage() {
@@ -15,7 +15,7 @@ export default function WorkerWalletPage() {
   }, [])
 
   if (error) return <Alert tone="error">{error}</Alert>
-  if (!wallet) return <p role="status">Carregando...</p>
+  if (!wallet) return <Loading />
 
   const { totals } = wallet
 

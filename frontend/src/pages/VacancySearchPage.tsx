@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { api, brl, formatShift, type VacancyCard } from '../api'
 import { CATEGORIES } from '../categories'
-import { Alert, Badge, Button, Card, Field, SelectField } from '../components/ui'
+import { Alert, Badge, Button, Card, Field, Loading, SelectField } from '../components/ui'
 
 interface Filters {
   q: string
@@ -82,6 +82,9 @@ export default function VacancySearchPage() {
   const [origin, setOrigin] = useState<Origin>(null)
   const [results, setResults] = useState<VacancyCard[] | null>(null)
   const [error, setError] = useState('')
+  // Consulta cujo resultado está na tela; se for diferente da atual, a busca está atualizando.
+  const [loadedQuery, setLoadedQuery] = useState<string | null>(null)
+  const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
     if (!('geolocation' in navigator)) return
@@ -91,19 +94,23 @@ export default function VacancySearchPage() {
     )
   }, [])
 
+  const query = buildQuery(filters, origin)
+  const loading = loadedQuery !== query
+
   useEffect(() => {
     let active = true
-    api<{ results: VacancyCard[] }>(`/api/vacancies/${buildQuery(filters, origin)}`)
+    api<{ results: VacancyCard[] }>(`/api/vacancies/${query}`)
       .then((data) => {
         if (!active) return
         setResults(data.results)
         setError('')
       })
       .catch((err: Error) => active && setError(err.message))
+      .finally(() => active && setLoadedQuery(query))
     return () => {
       active = false
     }
-  }, [filters, origin])
+  }, [query])
 
   function submit(event: FormEvent) {
     event.preventDefault()
@@ -114,6 +121,13 @@ export default function VacancySearchPage() {
     setDraft(EMPTY)
     setFilters(EMPTY)
   }
+
+  // Filtros além do texto: no celular ficam recolhidos e o botão mostra quantos estão ativos.
+  const activeExtras = [filters.category, filters.date_from, filters.date_to, filters.min_pay].filter(
+    Boolean,
+  ).length
+
+  const hasAnyFilter = [draft, filters].some((f) => Object.values(f).some(Boolean))
 
   const set = (name: keyof Filters) => (e: { target: { value: string } }) =>
     setDraft({ ...draft, [name]: e.target.value })
@@ -131,30 +145,46 @@ export default function VacancySearchPage() {
               onChange={set('q')}
               placeholder="Ex.: limpeza, carga"
             />
-            <SelectField label="Categoria" value={draft.category} onChange={set('category')}>
-              <option value="">Todas</option>
-              {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </SelectField>
-            <Field label="De" type="date" value={draft.date_from} onChange={set('date_from')} />
-            <Field label="Até" type="date" value={draft.date_to} onChange={set('date_to')} />
-            <Field
-              label="Receber no mínimo (R$)"
-              type="number"
-              min="0"
-              step="1"
-              value={draft.min_pay}
-              onChange={set('min_pay')}
-            />
+            <div className={`filtros-extra ${showFilters ? 'aberto' : ''}`} id="filtros-extra">
+              <SelectField label="Categoria" value={draft.category} onChange={set('category')}>
+                <option value="">Todas</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </SelectField>
+              <Field label="De" type="date" value={draft.date_from} onChange={set('date_from')} />
+              <Field label="Até" type="date" value={draft.date_to} onChange={set('date_to')} />
+              <Field
+                label="Receber no mínimo (R$)"
+                type="number"
+                min="0"
+                step="1"
+                value={draft.min_pay}
+                onChange={set('min_pay')}
+              />
+            </div>
           </div>
           <div className="acoes">
-            <Button type="submit">Buscar</Button>
-            <Button type="button" variant="secondary" onClick={clear}>
-              Limpar filtros
+            <Button type="submit" busy={loading && results !== null}>
+              Buscar
             </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="so-celular"
+              aria-expanded={showFilters}
+              aria-controls="filtros-extra"
+              onClick={() => setShowFilters((v) => !v)}
+            >
+              {showFilters ? 'Menos filtros' : `Filtros${activeExtras ? ` (${activeExtras})` : ''}`}
+            </Button>
+            {hasAnyFilter && (
+              <Button type="button" variant="secondary" onClick={clear}>
+                Limpar filtros
+              </Button>
+            )}
           </div>
         </form>
         <p className="sub">
@@ -165,7 +195,7 @@ export default function VacancySearchPage() {
       </Card>
 
       {error && <Alert tone="error">{error}</Alert>}
-      {!results && !error && <p role="status">Carregando...</p>}
+      {!results && !error && <Loading />}
       {results && results.length === 0 && (
         <Card>
           <div className="vazio">
@@ -178,7 +208,7 @@ export default function VacancySearchPage() {
         </Card>
       )}
       {results && results.length > 0 && (
-        <ul className="row-list">
+        <ul className="row-list" aria-busy={loading} data-atualizando={loading || undefined}>
           {results.map((v) => (
             <ResultRow key={v.id} vacancy={v} />
           ))}

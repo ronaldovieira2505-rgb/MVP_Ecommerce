@@ -94,6 +94,25 @@ describe('Buscar vagas (US12)', () => {
     expect(calls.at(-1)).toBe('/api/vacancies/')
   })
 
+  it('botão de filtros (celular) abre e fecha e mostra quantos estão ativos', async () => {
+    mockApi()
+    renderAt('/vagas')
+    await screen.findByText('Você recebe R$ 97,00')
+    const user = userEvent.setup()
+    const toggle = screen.getByRole('button', { name: 'Filtros' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+    await user.click(toggle)
+    expect(screen.getByRole('button', { name: 'Menos filtros' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    await user.selectOptions(screen.getByLabelText('Categoria'), 'LIMPEZA')
+    await user.click(screen.getByRole('button', { name: 'Buscar' }))
+    await user.click(screen.getByRole('button', { name: 'Menos filtros' }))
+    expect(screen.getByRole('button', { name: 'Filtros (1)' })).toBeInTheDocument()
+  })
+
   it('detalhe mostra taxa, valor líquido e o que falta para se candidatar', async () => {
     mockApi()
     renderAt('/vagas/7')

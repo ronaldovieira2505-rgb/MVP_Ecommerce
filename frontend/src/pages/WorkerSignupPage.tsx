@@ -117,7 +117,7 @@ export default function WorkerSignupPage() {
           onChange={set('password')}
         />
         <p>
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" busy={submitting}>
             Criar conta
           </Button>
         </p>

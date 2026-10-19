@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, brl, formatShift, type JobItem, type VacancyPublicDetail } from '../api'
-import { Alert, Badge, Button, Card } from '../components/ui'
+import { Alert, Badge, Button, Card, Loading } from '../components/ui'
 
 /** Detalhe da vaga para o prestador: descrição, endereço com mapa e valor líquido (US17). */
 export default function VacancyPublicDetailPage() {
@@ -42,7 +42,7 @@ export default function VacancyPublicDetailPage() {
   }
 
   if (error) return <Alert tone="error">{error}</Alert>
-  if (!vacancy) return <p role="status">Carregando...</p>
+  if (!vacancy) return <Loading rows={1} />
 
   const sent = Boolean(vacancy.my_application)
 
@@ -114,7 +114,7 @@ export default function VacancyPublicDetailPage() {
         </div>
       </dl>
       <div className="acoes">
-        <Button disabled={!vacancy.can_apply || applying} onClick={handleApply}>
+        <Button disabled={!vacancy.can_apply} busy={applying} onClick={handleApply}>
           {sent ? 'Candidatura enviada' : 'Quero esta vaga'}
         </Button>
       </div>

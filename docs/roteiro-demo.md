@@ -22,12 +22,12 @@ Senha de todos os usuários de exemplo: `Demo@12345`.
 | Perfil | E-mail |
 |---|---|
 | Admin (`/admin`) | `admin@exemplo.com` |
-| Empresa aprovada | `empresa1@exemplo.com`, `empresa2@exemplo.com` |
+| Empresa aprovada | `empresa1@exemplo.com`, `empresa2@exemplo.com`, `empresa3@exemplo.com`, `empresa4@exemplo.com` |
 | Empresa pendente na fila | `empresa.pendente@exemplo.com` |
 | Prestador aprovado (com PIX) | `prestador1@exemplo.com`, `prestador2@exemplo.com`, `prestador3@exemplo.com` |
 | Prestador pendente na fila | `prestador.pendente@exemplo.com` |
 
-Os dados de exemplo são fictícios (CPFs e CNPJs válidos gerados, e-mails `@exemplo.com`). Rodar `seed_demo` de novo não duplica nada.
+O `seed_demo` também cadastra um catálogo de 10 anúncios publicados (obra, limpeza, varejo, eventos, fotografia, carga e descarga e outros), um deles com o selo "Urgente", para a busca não ficar vazia. Os dados de exemplo são fictícios (CPFs e CNPJs válidos gerados, e-mails `@exemplo.com`). Rodar `seed_demo` de novo não duplica nada.
 
 ## Simular a localização no navegador (check-in)
 

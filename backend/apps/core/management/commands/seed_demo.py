@@ -1,6 +1,7 @@
 """Dados de demonstração (BASE-03). Idempotente: rodar de novo não duplica nada."""
 
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
@@ -62,6 +63,123 @@ COMPANIES = [
         "email": f"empresa.pendente@{EMAIL_DOMAIN}",
         "approved": False,
     },
+    # Aprovadas a mais, só para o catálogo de anúncios de exemplo não vir de 2 empresas.
+    {
+        "base": "44555666",
+        "legal_name": "Construtora Horizonte Demo LTDA",
+        "trade_name": "Horizonte Obras",
+        "owner": "Carlos Mendes",
+        "email": f"empresa3@{EMAIL_DOMAIN}",
+        "approved": True,
+    },
+    {
+        "base": "55666777",
+        "legal_name": "Supermercado Bom Preço Demo LTDA",
+        "trade_name": "Bom Preço",
+        "owner": "Juliana Rocha",
+        "email": f"empresa4@{EMAIL_DOMAIN}",
+        "approved": True,
+    },
+]
+
+LOCAL_TZ = ZoneInfo("America/Sao_Paulo")
+
+# Catálogo de anúncios de exemplo (todos publicados e pagos no PSP simulado).
+# (índice da empresa em COMPANIES, dias a partir de hoje, hora local de início,
+#  duração em horas, dados da vaga)
+# O anúncio marcado com "urgente" simula uma vaga reaberta após falta (selo "Urgente").
+CATALOGO = [
+    (3, 1, 7, 9, {
+        "title": "Ajudante de obra para reforma de apartamento",
+        "category": "AJUDANTE_OBRA",
+        "description": "Apoio ao pedreiro na demolição de revestimento, transporte de entulho "
+        "e organização do canteiro. Levar calçado fechado; EPI fornecido no local.",
+        "street": "Rua dos Pinheiros", "number": "870", "district": "Pinheiros",
+        "zip_code": "05422001", "latitude": "-23.565200", "longitude": "-46.684100",
+        "pay_per_person_cents": 18000, "positions": 2,
+    }),
+    (3, 3, 8, 8, {
+        "title": "Limpeza pós-obra em loja",
+        "category": "LIMPEZA",
+        "description": "Limpeza fina após reforma: remoção de poeira, restos de tinta e "
+        "lavagem de piso. Material de limpeza fornecido.",
+        "street": "Avenida Ibirapuera", "number": "2120", "district": "Moema",
+        "zip_code": "04028001", "latitude": "-23.604800", "longitude": "-46.665300",
+        "pay_per_person_cents": 16000, "positions": 3,
+    }),
+    (4, 1, 6, 6, {
+        "title": "Repositor para abastecimento de gôndolas",
+        "category": "VAREJO",
+        "description": "Reposição de mercearia e bebidas antes da abertura da loja, conferência "
+        "de validade e organização de estoque.",
+        "street": "Rua da Mooca", "number": "2500", "district": "Mooca",
+        "zip_code": "03104002", "latitude": "-23.555900", "longitude": "-46.598700",
+        "pay_per_person_cents": 12000, "positions": 4,
+    }),
+    (4, 2, 14, 6, {
+        "title": "Operador de caixa para promoção de fim de semana",
+        "category": "VAREJO",
+        "description": "Atendimento no caixa durante a promoção. Experiência com caixa é "
+        "desejável; treinamento rápido no início do turno.",
+        "street": "Rua Taquari", "number": "635", "district": "Mooca",
+        "zip_code": "03166000", "latitude": "-23.550300", "longitude": "-46.594400",
+        "pay_per_person_cents": 13500, "positions": 2,
+    }),
+    (1, 4, 17, 7, {
+        "title": "Apoio de salão em evento corporativo",
+        "category": "EVENTOS",
+        "description": "Recepção de convidados, reposição do buffet e organização do salão "
+        "em evento para 200 pessoas. Traje: calça preta e camisa branca.",
+        "street": "Rua Funchal", "number": "500", "district": "Vila Olímpia",
+        "zip_code": "04551060", "latitude": "-23.593600", "longitude": "-46.689900",
+        "pay_per_person_cents": 22000, "positions": 4,
+    }),
+    (1, 5, 18, 5, {
+        "title": "Fotógrafo para lançamento de produto",
+        "category": "FOTOGRAFIA",
+        "description": "Cobertura fotográfica do lançamento, com fotos do palco e dos "
+        "convidados. Equipamento próprio; entrega das fotos tratadas em até 3 dias.",
+        "street": "Avenida Brigadeiro Faria Lima", "number": "3477", "district": "Itaim Bibi",
+        "zip_code": "04538133", "latitude": "-23.586100", "longitude": "-46.682000",
+        "pay_per_person_cents": 45000, "positions": 1,
+    }),
+    (1, 6, 7, 10, {
+        "title": "Montagem de estande em feira",
+        "category": "EVENTOS",
+        "description": "Montagem de estrutura de estande (painéis, iluminação e mobiliário) "
+        "seguindo o projeto. Ferramentas fornecidas.",
+        "street": "Rodovia Presidente Dutra", "number": "km 1,5", "district": "Vila Guilherme",
+        "zip_code": "02055000", "latitude": "-23.512900", "longitude": "-46.611500",
+        "pay_per_person_cents": 25000, "positions": 3,
+    }),
+    (0, 1, 22, 6, {
+        "title": "Carga e descarga de caminhões no CD (turno noturno)",
+        "category": "CARGA_DESCARGA",
+        "description": "Descarga de caixas de até 20 kg e separação por rota no centro de "
+        "distribuição. Turno noturno.",
+        "street": "Avenida Mofarrej", "number": "1200", "district": "Vila Leopoldina",
+        "zip_code": "05311000", "latitude": "-23.528600", "longitude": "-46.733400",
+        "pay_per_person_cents": 17000, "positions": 4,
+        "urgente": True,
+    }),
+    (0, 2, 8, 8, {
+        "title": "Auxiliar de mudança residencial",
+        "category": "CARGA_DESCARGA",
+        "description": "Embalagem e transporte de móveis em mudança de apartamento para casa. "
+        "Elevador de serviço disponível.",
+        "street": "Rua Tuiuti", "number": "1800", "district": "Tatuapé",
+        "zip_code": "03081000", "latitude": "-23.541000", "longitude": "-46.574600",
+        "pay_per_person_cents": 19000, "positions": 2,
+    }),
+    (0, 7, 9, 4, {
+        "title": "Conferente de inventário",
+        "category": "OUTROS",
+        "description": "Contagem de itens no estoque com coletor de dados. Atenção aos "
+        "detalhes é essencial.",
+        "street": "Avenida Marquês de São Vicente", "number": "2219", "district": "Barra Funda",
+        "zip_code": "05036040", "latitude": "-23.522700", "longitude": "-46.677900",
+        "pay_per_person_cents": 11000, "positions": 2,
+    }),
 ]
 
 WORKERS = [
@@ -143,6 +261,7 @@ class Command(BaseCommand):
         if options["prazos_curtos"]:
             self._short_deadlines(admin)
         self._vacancies(companies, workers, admin, now)
+        self._catalogo(companies, now)
         self._print_credentials(options["prazos_curtos"])
 
     def _admin(self):
@@ -313,6 +432,30 @@ class Command(BaseCommand):
             pay_per_person_cents=9000,
             positions=1,
         )
+
+    def _catalogo(self, companies, now):
+        """Anúncios de exemplo variados (categorias, bairros, valores). Idempotente por título."""
+        for company_index, days, hour, hours, data in CATALOGO:
+            fields = dict(data)
+            urgent = fields.pop("urgente", False)
+            title = fields.pop("title")
+            day = timezone.localdate() + timedelta(days=days)
+            starts_at = datetime.combine(day, time(hour, 0), tzinfo=LOCAL_TZ)
+            vacancy, created = self._vacancy(
+                companies[company_index],
+                title,
+                starts_at,
+                hours,
+                now,
+                city="São Paulo",
+                state="SP",
+                **fields,
+            )
+            if created:
+                vacancies.pay_vacancy(vacancy, now=now)
+                if urgent:
+                    vacancy.reopened = True
+                    vacancy.save(update_fields=["reopened"])
 
     def _print_credentials(self, short):
         out = self.stdout

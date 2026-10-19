@@ -30,6 +30,7 @@ export default function CompanyVacancyNewPage() {
   })
   const [error, setError] = useState('')
   const [locating, setLocating] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm({ ...form, [key]: e.target.value })
@@ -63,6 +64,7 @@ export default function CompanyVacancyNewPage() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     setError('')
+    setSubmitting(true)
     const toIso = (v: string) => (v ? new Date(v).toISOString() : '')
     try {
       const vacancy = await api<Vacancy>('/api/vacancies/', {
@@ -86,6 +88,7 @@ export default function CompanyVacancyNewPage() {
       navigate(`/empresa/vagas/${vacancy.id}`)
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Não foi possível criar a vaga.')
+      setSubmitting(false)
     }
   }
 
@@ -94,41 +97,60 @@ export default function CompanyVacancyNewPage() {
       <h1>Nova vaga</h1>
       {error && <Alert tone="error">{error}</Alert>}
       <form onSubmit={onSubmit} noValidate>
-        <Field label="Título" value={form.title} onChange={set('title')} />
-        <SelectField label="Categoria" value={form.category} onChange={set('category')}>
-          {CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </SelectField>
-        <Field label="Descrição do escopo" value={form.description} onChange={set('description')} />
-        <Field label="Endereço" value={form.street} onChange={set('street')} />
-        <Field label="Número" value={form.number} onChange={set('number')} />
-        <Field label="Cidade" value={form.city} onChange={set('city')} />
-        <Field label="UF" maxLength={2} value={form.state} onChange={set('state')} />
-        <Field label="Latitude" value={form.latitude} onChange={set('latitude')} />
-        <Field label="Longitude" value={form.longitude} onChange={set('longitude')} />
-        <p className="sub">
-          As coordenadas definem o raio do check-in: o prestador só consegue bater o ponto perto
-          do local.
-        </p>
-        <div className="acoes">
+        <fieldset className="bloco">
+          <legend>O serviço</legend>
+          <div className="grade grade-2">
+            <Field label="Título" value={form.title} onChange={set('title')} />
+            <SelectField label="Categoria" value={form.category} onChange={set('category')}>
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </SelectField>
+          </div>
+          <Field label="Descrição do escopo" value={form.description} onChange={set('description')} />
+        </fieldset>
+        <fieldset className="bloco">
+          <legend>Onde</legend>
+          <div className="grade grade-endereco">
+            <Field label="Endereço" value={form.street} onChange={set('street')} />
+            <Field label="Número" value={form.number} onChange={set('number')} />
+          </div>
+          <div className="grade grade-cidade">
+            <Field label="Cidade" value={form.city} onChange={set('city')} />
+            <Field label="UF" maxLength={2} value={form.state} onChange={set('state')} />
+          </div>
+          <div className="grade grade-2">
+            <Field label="Latitude" value={form.latitude} onChange={set('latitude')} />
+            <Field label="Longitude" value={form.longitude} onChange={set('longitude')} />
+          </div>
+          <p className="sub">
+            As coordenadas definem o raio do check-in: o prestador só consegue bater o ponto perto
+            do local.
+          </p>
           <Button type="button" variant="secondary" onClick={useMyLocation} disabled={locating}>
-            Usar minha localização
+            {locating ? 'Localizando...' : 'Usar minha localização'}
           </Button>
-        </div>
-        <Field label="Início" type="datetime-local" value={form.starts_at} onChange={set('starts_at')} />
-        <Field label="Fim" type="datetime-local" value={form.ends_at} onChange={set('ends_at')} />
-        <Field label="Valor por pessoa (R$)" inputMode="decimal" value={form.pay} onChange={set('pay')} />
-        <Field label="Número de pessoas" type="number" min={1} value={form.positions} onChange={set('positions')} />
+        </fieldset>
+        <fieldset className="bloco">
+          <legend>Quando e quanto</legend>
+          <div className="grade grade-2">
+            <Field label="Início" type="datetime-local" value={form.starts_at} onChange={set('starts_at')} />
+            <Field label="Fim" type="datetime-local" value={form.ends_at} onChange={set('ends_at')} />
+          </div>
+          <div className="grade grade-2">
+            <Field label="Valor por pessoa (R$)" inputMode="decimal" value={form.pay} onChange={set('pay')} />
+            <Field label="Número de pessoas" type="number" min={1} value={form.positions} onChange={set('positions')} />
+          </div>
+        </fieldset>
         <p className="total" aria-live="polite">
           Total a pagar <strong>{brl(total)}</strong>
         </p>
         <p className="sub">
           O valor fica retido em custódia na publicação e é liberado conforme a presença.
         </p>
-        <Button type="submit" block>
+        <Button type="submit" block busy={submitting}>
           Criar vaga
         </Button>
       </form>

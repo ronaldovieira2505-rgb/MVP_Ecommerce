@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { api, ApiError, brl, formatShift, type Vacancy } from '../api'
 import { CATEGORIES } from '../categories'
-import { Alert, Badge, Button, Card, Field, SelectField, Slots } from '../components/ui'
+import { Alert, Badge, Button, Card, Field, Loading, SelectField, Slots } from '../components/ui'
 import { badgeToneFor, toneFor } from '../status'
 import PendingAssignmentsSection from './PendingAssignments'
 import VacancyCandidatesSection from './VacancyCandidates'
@@ -24,6 +24,7 @@ export default function CompanyVacancyDetailPage() {
   const [vacancy, setVacancy] = useState<Vacancy | null>(null)
   const [error, setError] = useState('')
   const [paid, setPaid] = useState(false)
+  const [paying, setPaying] = useState(false)
   const [saved, setSaved] = useState(false)
   const [editing, setEditing] = useState(false)
   const [confirmingRemove, setConfirmingRemove] = useState(false)
@@ -58,11 +59,14 @@ export default function CompanyVacancyDetailPage() {
 
   async function pay() {
     setError('')
+    setPaying(true)
     try {
       setVacancy(await api<Vacancy>(`/api/vacancies/${id}/pay/`, { method: 'POST' }))
       setPaid(true)
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Não foi possível concluir o pagamento.')
+    } finally {
+      setPaying(false)
     }
   }
 
@@ -119,7 +123,7 @@ export default function CompanyVacancyDetailPage() {
     }
   }
 
-  if (!vacancy && !error) return <p role="status">Carregando...</p>
+  if (!vacancy && !error) return <Loading rows={1} />
 
   return (
     <Card tone={vacancy ? toneFor(vacancy.status) : undefined}>
@@ -206,7 +210,9 @@ export default function CompanyVacancyDetailPage() {
                 </p>
               )}
               <div className="acoes">
-                <Button onClick={pay}>Pagar e publicar</Button>
+                <Button onClick={pay} busy={paying}>
+                  Pagar e publicar
+                </Button>
               </div>
             </>
           )}
