@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, type WorkerProfile } from '../api'
-import { Alert, Badge, Card } from '../components/ui'
+import { Alert, Badge, Card, Loading } from '../components/ui'
 import type { Tone } from '../status'
 
 const DOCUMENT_STATUS: Record<string, string> = {
@@ -31,7 +31,7 @@ export default function WorkerHomePage() {
   }, [])
 
   if (error) return <Alert tone="error">{error}</Alert>
-  if (!profile) return <p role="status">Carregando...</p>
+  if (!profile) return <Loading rows={1} />
 
   const pending = profile.profile_steps.filter((step) => !step.done).length
 

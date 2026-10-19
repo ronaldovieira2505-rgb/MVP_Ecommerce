@@ -120,74 +120,76 @@ export default function CompanySignupPage() {
       </p>
       {error && <Alert tone="error">{error}</Alert>}
       <form onSubmit={isLast ? handleSubmit : handleNext}>
-        {step === 0 && (
-          <>
-            <Field
-              label="CNPJ"
-              inputMode="numeric"
-              autoComplete="off"
-              required
-              value={form.cnpj}
-              onChange={set('cnpj')}
-              onBlur={() => form.cnpj && void checkCnpj()}
-            />
-            {cnpjError && <Alert tone="error">{cnpjError}</Alert>}
-            {notice && <Alert tone="info">{notice}</Alert>}
-            {lookingUp && <p role="status">Consultando CNPJ...</p>}
-          </>
-        )}
-        {step === 1 && (
-          <>
-            {notice && <Alert tone="info">{notice}</Alert>}
-            {/* Endereço e demais dados da BrasilAPI seguem no envio, sem ocupar a tela. */}
-            <Field label="Razão social" required value={form.legal_name} onChange={set('legal_name')} />
-            <SelectField
-              label="Regime tributário"
-              required
-              value={form.tax_regime}
-              onChange={set('tax_regime')}
-            >
-              <option value="">Selecione</option>
-              <option value="SIMPLES">Simples Nacional</option>
-              <option value="NORMAL">Normal</option>
-            </SelectField>
-          </>
-        )}
-        {step === 2 && (
-          <>
-            <Field
-              label="Nome"
-              autoComplete="name"
-              required
-              value={form.owner_name}
-              onChange={set('owner_name')}
-            />
-            <Field
-              label="E-mail"
-              type="email"
-              autoComplete="email"
-              required
-              value={form.email}
-              onChange={set('email')}
-            />
-            <Field
-              label="Senha"
-              type="password"
-              autoComplete="new-password"
-              minLength={8}
-              required
-              value={form.password}
-              onChange={set('password')}
-            />
-          </>
-        )}
+        <div className="passo" key={step}>
+          {step === 0 && (
+            <>
+              <Field
+                label="CNPJ"
+                inputMode="numeric"
+                autoComplete="off"
+                required
+                value={form.cnpj}
+                onChange={set('cnpj')}
+                onBlur={() => form.cnpj && void checkCnpj()}
+              />
+              {cnpjError && <Alert tone="error">{cnpjError}</Alert>}
+              {notice && <Alert tone="info">{notice}</Alert>}
+              {lookingUp && <p role="status">Consultando CNPJ...</p>}
+            </>
+          )}
+          {step === 1 && (
+            <>
+              {notice && <Alert tone="info">{notice}</Alert>}
+              {/* Endereço e demais dados da BrasilAPI seguem no envio, sem ocupar a tela. */}
+              <Field label="Razão social" required value={form.legal_name} onChange={set('legal_name')} />
+              <SelectField
+                label="Regime tributário"
+                required
+                value={form.tax_regime}
+                onChange={set('tax_regime')}
+              >
+                <option value="">Selecione</option>
+                <option value="SIMPLES">Simples Nacional</option>
+                <option value="NORMAL">Normal</option>
+              </SelectField>
+            </>
+          )}
+          {step === 2 && (
+            <>
+              <Field
+                label="Nome"
+                autoComplete="name"
+                required
+                value={form.owner_name}
+                onChange={set('owner_name')}
+              />
+              <Field
+                label="E-mail"
+                type="email"
+                autoComplete="email"
+                required
+                value={form.email}
+                onChange={set('email')}
+              />
+              <Field
+                label="Senha"
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                required
+                value={form.password}
+                onChange={set('password')}
+              />
+            </>
+          )}
+        </div>
         <p>
           {step > 0 && (
             <Button type="button" variant="secondary" onClick={() => setStep((s) => s - 1)}>
               Voltar
             </Button>
           )}{' '}
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" busy={submitting}>
             {isLast ? 'Criar conta' : 'Continuar'}
           </Button>
         </p>

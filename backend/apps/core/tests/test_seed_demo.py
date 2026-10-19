@@ -4,6 +4,7 @@ from io import StringIO
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
+from django.utils import timezone
 
 from apps.accounts.models import Role
 from apps.companies.models import Company
@@ -28,7 +29,7 @@ def test_creates_demo_data_on_empty_database():
 
     assert User.objects.filter(role=Role.ADMIN, is_superuser=True).count() == 1
     approved_companies = Company.objects.filter(verification_status="APROVADA")
-    assert approved_companies.count() == 2
+    assert approved_companies.count() == 4
     assert Company.objects.filter(verification_status="PENDENTE").count() == 1
     approved_workers = Worker.objects.filter(verification_status="APROVADO")
     assert approved_workers.count() == 3
@@ -36,7 +37,7 @@ def test_creates_demo_data_on_empty_database():
     assert Worker.objects.filter(verification_status="EM_ANALISE").count() == 1
 
     vacancies = Vacancy.objects.all()
-    assert vacancies.count() == 4
+    assert vacancies.count() == 14
     assert len({v.status for v in vacancies}) >= 2
     for vacancy in vacancies:
         assert -24.1 < float(vacancy.latitude) < -23.2
@@ -106,3 +107,14 @@ def test_credentials_can_log_in(client):
     )
 
     assert response.status_code == 200
+
+
+def test_catalog_has_varied_published_ads_with_urgent_one():
+    run_seed()
+
+    published = Vacancy.objects.filter(status=Vacancy.Status.PUBLISHED)
+    assert published.count() >= 12
+    assert len({v.category for v in published}) >= 5
+    assert len({v.company_id for v in published}) >= 4
+    assert published.filter(reopened=True).count() == 1
+    assert all(v.starts_at > timezone.now() for v in published)

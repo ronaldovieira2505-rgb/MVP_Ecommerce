@@ -47,7 +47,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <Button type="submit" block disabled={submitting}>
+          <Button type="submit" block busy={submitting}>
             Entrar
           </Button>
         </form>

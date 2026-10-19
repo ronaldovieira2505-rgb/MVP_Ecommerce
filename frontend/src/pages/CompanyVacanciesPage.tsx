@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, brl, formatShift, type Vacancy, type VacancyList } from '../api'
-import { Alert, Badge, Card, Slots } from '../components/ui'
+import { Alert, Badge, Card, Loading, Slots } from '../components/ui'
 import { badgeToneFor, toneFor } from '../status'
 
 /** Uma vaga por ficha: estado na lombada, valor por pessoa e posições. */
@@ -39,7 +39,7 @@ export default function CompanyVacanciesPage() {
       .catch(() => setError('Não foi possível carregar as suas vagas.'))
   }, [])
 
-  if (!data && !error) return <p role="status">Carregando...</p>
+  if (!data && !error) return <Loading />
 
   return (
     <>

@@ -9,7 +9,7 @@ import {
   type JobItem,
   type MyJobs,
 } from '../api'
-import { Alert, Badge, Button, Card } from '../components/ui'
+import { Alert, Badge, Button, Card, Loading } from '../components/ui'
 
 const GROUPS: { key: JobGroupKey; title: string; empty: string }[] = [
   { key: 'waiting', title: 'Aguardando', empty: 'Nenhuma candidatura aguardando resposta.' },
@@ -119,7 +119,7 @@ export default function MyJobsPage() {
   }
 
   if (error) return <Alert tone="error">{error}</Alert>
-  if (!jobs) return <p role="status">Carregando...</p>
+  if (!jobs) return <Loading />
 
   return (
     <>
@@ -157,7 +157,7 @@ export default function MyJobsPage() {
                   <>
                     {item.status === 'CONFIRMADA' && item.can_check_in && (
                       <div className="acoes">
-                        <Button disabled={busyId === item.id} onClick={() => checkIn(item)}>
+                        <Button busy={busyId === item.id} onClick={() => checkIn(item)}>
                           Cheguei
                         </Button>
                       </div>
@@ -181,7 +181,7 @@ export default function MyJobsPage() {
                     {item.can_check_out &&
                       (confirmingId === item.id ? (
                         <div className="acoes">
-                          <Button disabled={busyId === item.id} onClick={() => checkOut(item)}>
+                          <Button busy={busyId === item.id} onClick={() => checkOut(item)}>
                             Confirmar encerramento
                           </Button>
                           <Button variant="secondary" onClick={() => setConfirmingId(null)}>

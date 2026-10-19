@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, ApiError, type WorkerProfile } from '../api'
-import { Alert, Button, Card, Field, SelectField } from '../components/ui'
+import { Alert, Button, Card, Field, Loading, SelectField } from '../components/ui'
 
 const KEY_TYPES = [
   { value: 'CPF', label: 'CPF' },
@@ -41,7 +41,7 @@ export default function WorkerPixPage() {
     }
   }
 
-  if (!profile && !error) return <p role="status">Carregando...</p>
+  if (!profile && !error) return <Loading rows={1} />
   const hasKey = Boolean(profile?.pix_key)
 
   return (

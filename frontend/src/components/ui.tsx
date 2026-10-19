@@ -10,11 +10,43 @@ import type { Tone } from '../status'
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'secondary' | 'ghost'
   block?: boolean
+  /** Ação em andamento: trava o botão e mostra o indicador, sem trocar o texto. */
+  busy?: boolean
 }
 
-export function Button({ variant = 'primary', block, className = '', ...rest }: ButtonProps) {
-  const classes = ['btn', `btn-${variant}`, block ? 'btn-block' : '', className]
-  return <button className={classes.filter(Boolean).join(' ')} {...rest} />
+export function Button({
+  variant = 'primary',
+  block,
+  busy = false,
+  className = '',
+  disabled,
+  ...rest
+}: ButtonProps) {
+  const classes = ['btn', `btn-${variant}`, block ? 'btn-block' : '', busy ? 'btn-busy' : '', className]
+  return (
+    <button
+      className={classes.filter(Boolean).join(' ')}
+      disabled={disabled || busy}
+      aria-busy={busy || undefined}
+      {...rest}
+    />
+  )
+}
+
+/** Carregando: fichas em branco no lugar do conteúdo, para a tela não "pular" ao chegar. */
+export function Loading({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="carregando" role="status">
+      <span className="sr-only">Carregando...</span>
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="ficha-vazia" aria-hidden="true">
+          <span className="traco traco-titulo" />
+          <span className="traco" />
+          <span className="traco traco-curto" />
+        </div>
+      ))}
+    </div>
+  )
 }
 
 type FieldProps = InputHTMLAttributes<HTMLInputElement> & { label: string }
