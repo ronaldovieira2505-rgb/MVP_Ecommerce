@@ -5,6 +5,7 @@ import type {
   SelectHTMLAttributes,
 } from 'react'
 import { useId } from 'react'
+import type { Tone } from '../status'
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'secondary' | 'ghost'
@@ -42,18 +43,35 @@ export function SelectField({ label, children, ...rest }: SelectFieldProps) {
   )
 }
 
-export function Card({ children }: { children: ReactNode }) {
-  return <section className="card">{children}</section>
+/** Ficha: a folha de papel do sistema. `tone` pinta a lombada com o estado. */
+export function Card({ tone, children }: { tone?: Tone; children: ReactNode }) {
+  return <section className={`ficha ${tone ? `ficha-${tone}` : ''}`}>{children}</section>
 }
 
 export function Badge({
   tone = 'neutral',
   children,
 }: {
-  tone?: 'neutral' | 'success' | 'error' | 'warning'
+  tone?: 'neutral' | 'success' | 'error' | 'warning' | 'info'
   children: ReactNode
 }) {
   return <span className={`badge ${tone === 'neutral' ? '' : `badge-${tone}`}`}>{children}</span>
+}
+
+/** Posições preenchidas: as marcas acompanham a contagem, que fica no texto. */
+export function Slots({ filled, total }: { filled: number; total: number }) {
+  return (
+    <span className="row-vagas">
+      <span className="slots" aria-hidden="true">
+        {Array.from({ length: total }, (_, i) => (
+          <span key={i} className={`slot ${i < filled ? 'slot-cheio' : ''}`} />
+        ))}
+      </span>
+      <span>
+        {filled}/{total} posições
+      </span>
+    </span>
+  )
 }
 
 export function Alert({

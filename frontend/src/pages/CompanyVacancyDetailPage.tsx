@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
-import { api, ApiError, brl, formatDateTime, type Vacancy } from '../api'
+import { api, ApiError, brl, formatShift, type Vacancy } from '../api'
 import { CATEGORIES } from '../categories'
-import { Alert, Badge, Button, Card, Field, SelectField } from '../components/ui'
+import { Alert, Badge, Button, Card, Field, SelectField, Slots } from '../components/ui'
+import { badgeToneFor, toneFor } from '../status'
 
 const METHODS: Record<string, string> = { PIX: 'PIX', BOLETO: 'boleto', CARTAO: 'cartão' }
 const READ_ONLY_HINT =
@@ -113,7 +114,7 @@ export default function CompanyVacancyDetailPage() {
   if (!vacancy && !error) return <p role="status">Carregando...</p>
 
   return (
-    <Card>
+    <Card tone={vacancy ? toneFor(vacancy.status) : undefined}>
       {error && <Alert tone="error">{error}</Alert>}
       {paid && <Alert tone="success">Pagamento confirmado. A vaga foi publicada.</Alert>}
       {saved && <Alert tone="success">Alterações salvas.</Alert>}
@@ -149,43 +150,72 @@ export default function CompanyVacancyDetailPage() {
       {vacancy && !editing && (
         <>
           <h1>{vacancy.title}</h1>
-          <Badge>{vacancy.status_label}</Badge>
+          <p>
+            <Badge tone={badgeToneFor(vacancy.status)}>{vacancy.status_label}</Badge>
+          </p>
           <p>{vacancy.description}</p>
-          <p>
-            {vacancy.category_label} · {formatDateTime(vacancy.starts_at)} a{' '}
-            {formatDateTime(vacancy.ends_at)}
-          </p>
-          <p>
-            {brl(vacancy.pay_per_person_cents)} por pessoa · {vacancy.filled_positions}/
-            {vacancy.positions} posições
-          </p>
-          <p>
-            Total a pagar: <strong>{brl(vacancy.total_cents)}</strong>
+          <dl className="linhas">
+            <div>
+              <dt>Serviço</dt>
+              <dd>{vacancy.category_label}</dd>
+            </div>
+            <div>
+              <dt>Turno</dt>
+              <dd>{formatShift(vacancy.starts_at, vacancy.ends_at)}</dd>
+            </div>
+            <div>
+              <dt>Valor por pessoa</dt>
+              <dd>{brl(vacancy.pay_per_person_cents)}</dd>
+            </div>
+            <div>
+              <dt>Posições</dt>
+              <dd>
+                <Slots filled={vacancy.filled_positions} total={vacancy.positions} />
+              </dd>
+            </div>
+            {vacancy.retained_cents > 0 && (
+              <div>
+                <dt>Retido em custódia</dt>
+                <dd>{brl(vacancy.retained_cents)}</dd>
+              </div>
+            )}
+          </dl>
+          <p className="total">
+            Total a pagar <strong>{brl(vacancy.total_cents)}</strong>
           </p>
           {vacancy.status === 'AGUARDANDO_PAGAMENTO' && (
             <>
               {vacancy.payment_method && (
-                <p>Meio de pagamento preferido: {METHODS[vacancy.payment_method] ?? vacancy.payment_method}</p>
+                <p className="sub">
+                  Cobramos pelo meio que você escolheu no cadastro:{' '}
+                  {METHODS[vacancy.payment_method] ?? vacancy.payment_method}.
+                </p>
               )}
-              <Button onClick={pay}>Pagar e publicar</Button>
+              <div className="acoes">
+                <Button onClick={pay}>Pagar e publicar</Button>
+              </div>
             </>
           )}
           {vacancy.status === 'PUBLICADA' && (
             <>
-              <Button variant="secondary" onClick={() => startEditing(vacancy)}>
-                Editar
-              </Button>{' '}
               {!confirmingRemove ? (
-                <Button variant="secondary" onClick={() => setConfirmingRemove(true)}>
-                  Remover anúncio
-                </Button>
+                <div className="acoes">
+                  <Button variant="secondary" onClick={() => startEditing(vacancy)}>
+                    Editar
+                  </Button>
+                  <Button variant="secondary" onClick={() => setConfirmingRemove(true)}>
+                    Remover anúncio
+                  </Button>
+                </div>
               ) : (
                 <Alert tone="info">
-                  Remover o anúncio estorna o valor integral e expira as candidaturas pendentes.{' '}
-                  <Button onClick={remove}>Confirmar remoção</Button>{' '}
-                  <Button variant="secondary" onClick={() => setConfirmingRemove(false)}>
-                    Voltar
-                  </Button>
+                  <p>Remover o anúncio estorna o valor integral e expira as candidaturas pendentes.</p>
+                  <div className="acoes">
+                    <Button onClick={remove}>Confirmar remoção</Button>
+                    <Button variant="secondary" onClick={() => setConfirmingRemove(false)}>
+                      Voltar
+                    </Button>
+                  </div>
                 </Alert>
               )}
             </>

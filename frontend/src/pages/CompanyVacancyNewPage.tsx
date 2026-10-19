@@ -109,15 +109,24 @@ export default function CompanyVacancyNewPage() {
         <Field label="UF" maxLength={2} value={form.state} onChange={set('state')} />
         <Field label="Latitude" value={form.latitude} onChange={set('latitude')} />
         <Field label="Longitude" value={form.longitude} onChange={set('longitude')} />
-        <Button type="button" variant="secondary" onClick={useMyLocation} disabled={locating}>
-          Usar minha localização
-        </Button>
+        <p className="sub">
+          As coordenadas definem o raio do check-in: o prestador só consegue bater o ponto perto
+          do local.
+        </p>
+        <div className="acoes">
+          <Button type="button" variant="secondary" onClick={useMyLocation} disabled={locating}>
+            Usar minha localização
+          </Button>
+        </div>
         <Field label="Início" type="datetime-local" value={form.starts_at} onChange={set('starts_at')} />
         <Field label="Fim" type="datetime-local" value={form.ends_at} onChange={set('ends_at')} />
         <Field label="Valor por pessoa (R$)" inputMode="decimal" value={form.pay} onChange={set('pay')} />
         <Field label="Número de pessoas" type="number" min={1} value={form.positions} onChange={set('positions')} />
-        <p aria-live="polite">
-          Total a pagar: <strong>{brl(total)}</strong>
+        <p className="total" aria-live="polite">
+          Total a pagar <strong>{brl(total)}</strong>
+        </p>
+        <p className="sub">
+          O valor fica retido em custódia na publicação e é liberado conforme a presença.
         </p>
         <Button type="submit" block>
           Criar vaga

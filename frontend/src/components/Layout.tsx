@@ -27,6 +27,9 @@ export default function Layout() {
 
   return (
     <>
+      <a className="pular" href="#conteudo">
+        Ir para o conteúdo
+      </a>
       <header className="app-header">
         <Link to="/" className="app-brand">
           Conecta Já
@@ -56,7 +59,7 @@ export default function Layout() {
           )}
         </div>
       </header>
-      <main className="app-main">
+      <main className="app-main" id="conteudo">
         {user?.role === 'COMPANY' && user.verification_status === 'PENDENTE' && (
           <Alert tone="info">
             Cadastro em análise: você poderá publicar vagas após a aprovação

@@ -49,7 +49,17 @@ export default function AppRoutes() {
           <Route path="empresa/vagas/:id" element={<CompanyVacancyDetailPage />} />
           <Route
             path="empresa/perfil"
-            element={<Placeholder title="Perfil da empresa" issue="uma próxima issue" />}
+            element={
+              <Placeholder
+                title="Perfil da empresa"
+                issue="uma próxima issue"
+                next={{
+                  to: '/empresa/vagas',
+                  label: 'Ir para minhas vagas',
+                  hint: 'Os dados do cadastro já valem para publicar turnos e pagar em custódia.',
+                }}
+              />
+            }
           />
         </Route>
         <Route element={<RequireRole role="WORKER" />}>

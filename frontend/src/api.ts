@@ -175,3 +175,16 @@ export function brl(cents: number): string {
 export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
 }
+
+const TZ = 'America/Sao_Paulo'
+
+/** Turno em uma linha: "3 de nov., 09:00 às 13:00" (ou com as duas datas). */
+export function formatShift(startIso: string, endIso: string): string {
+  const day = (iso: string) =>
+    new Date(iso).toLocaleDateString('pt-BR', { timeZone: TZ, day: 'numeric', month: 'short' })
+  const time = (iso: string) =>
+    new Date(iso).toLocaleTimeString('pt-BR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })
+  return day(startIso) === day(endIso)
+    ? `${day(startIso)}, ${time(startIso)} às ${time(endIso)}`
+    : `${day(startIso)} ${time(startIso)} até ${day(endIso)} ${time(endIso)}`
+}
