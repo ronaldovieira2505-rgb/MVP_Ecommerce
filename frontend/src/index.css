@@ -339,6 +339,22 @@ a {
   padding: var(--espaco-2);
 }
 
+/* Filtros da busca: em telas largas eles dividem a linha. */
+.filtros {
+  display: grid;
+  gap: 0 var(--espaco-4);
+}
+
+@media (min-width: 640px) {
+  .filtros {
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  }
+
+  .filtros .field {
+    max-width: none;
+  }
+}
+
 /* ─── Marcador de estado ────────────────────────────────────── */
 .badge {
   display: inline-block;
@@ -522,6 +538,25 @@ a {
   font-weight: 700;
 }
 
+/* O que o prestador leva para casa: a informação mais importante da busca. */
+.recebe {
+  margin: 0;
+  max-width: none;
+  font-family: var(--fonte-titulo);
+  font-size: var(--escala-grande);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+/* Letra miúda da ficha: a conta que explica o valor acima. */
+.letra-miuda {
+  display: block;
+  margin-top: var(--espaco-1);
+  font-size: var(--escala-pequena);
+  color: var(--tinta-media);
+}
+
 @media (min-width: 640px) {
   .row {
     grid-template-columns: 1fr auto;
@@ -579,6 +614,30 @@ a {
   margin: 0;
   font-weight: 700;
   text-align: right;
+}
+
+/* Última linha da conta: o valor que a pessoa recebe. */
+.linha-total {
+  border-bottom-width: 2px;
+  border-bottom-color: var(--tinta);
+}
+
+.linha-total dd strong {
+  font-family: var(--fonte-titulo);
+  font-size: var(--escala-grande);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+}
+
+/* Descrição escrita pela empresa: preserva as quebras de linha dela. */
+.descricao {
+  white-space: pre-line;
+}
+
+.marcadores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-2);
 }
 
 /* ─── Entrada: a promessa à esquerda, o formulário à direita ── */
