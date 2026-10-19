@@ -115,7 +115,7 @@ def mark_no_show(assignment, *, now=None):
 @transaction.atomic
 def approve_hours(assignment, *, actor=None, now=None):
     now = now or timezone.now()
-    return transition(
+    assignment = transition(
         assignment,
         ASSIGNMENT_MACHINE,
         S.APPROVED,
@@ -125,12 +125,20 @@ def approve_hours(assignment, *, actor=None, now=None):
         validated_at=now,
         validated_by=actor,
     )
+    notify(
+        assignment.worker.user,
+        "HORAS_APROVADAS",
+        "Horas aprovadas",
+        f"A empresa aprovou as suas horas em “{assignment.vacancy.title}”. "
+        "O pagamento será liberado.",
+    )
+    return assignment
 
 
 @transaction.atomic
 def auto_approve_hours(assignment, *, now=None):
     now = now or timezone.now()
-    return transition(
+    assignment = transition(
         assignment,
         ASSIGNMENT_MACHINE,
         S.APPROVED,
@@ -139,6 +147,22 @@ def auto_approve_hours(assignment, *, now=None):
         validated_at=now,
         validated_by=None,
     )
+    vacancy = assignment.vacancy
+    notify(
+        assignment.worker.user,
+        "HORAS_APROVADAS",
+        "Horas aprovadas automaticamente",
+        f"As horas de “{vacancy.title}” foram aprovadas por decurso de prazo. "
+        "O pagamento será liberado.",
+    )
+    notify_company(
+        vacancy.company,
+        "HORAS_APROVADAS",
+        "Horas aprovadas automaticamente",
+        f"O prazo para conferir as horas de “{vacancy.title}” terminou sem manifestação. "
+        "As horas foram aprovadas e o pagamento será liberado.",
+    )
+    return assignment
 
 
 @transaction.atomic

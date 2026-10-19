@@ -2,6 +2,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import type { Role } from './api'
 import { homePathFor, useAuth } from './authContext'
 import Layout from './components/Layout'
+import CompanyConfirmPresencePage from './pages/CompanyConfirmPresencePage'
 import CompanySignupPage from './pages/CompanySignupPage'
 import CompanyVacanciesPage from './pages/CompanyVacanciesPage'
 import CompanyVacancyDetailPage from './pages/CompanyVacancyDetailPage'
@@ -48,6 +49,7 @@ export default function AppRoutes() {
           <Route path="empresa/vagas" element={<CompanyVacanciesPage />} />
           <Route path="empresa/vagas/nova" element={<CompanyVacancyNewPage />} />
           <Route path="empresa/vagas/:id" element={<CompanyVacancyDetailPage />} />
+          <Route path="empresa/confirmar-presenca" element={<CompanyConfirmPresencePage />} />
           <Route
             path="empresa/perfil"
             element={

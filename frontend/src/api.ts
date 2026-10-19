@@ -251,3 +251,28 @@ export function formatShift(startIso: string, endIso: string): string {
     ? `${day(startIso)}, ${time(startIso)} às ${time(endIso)}`
     : `${day(startIso)} ${time(startIso)} até ${day(endIso)} ${time(endIso)}`
 }
+
+/** Alocação aguardando a conferência das horas pela empresa (US56). */
+export interface PendingAssignment {
+  id: number
+  vacancy_id: number
+  vacancy_title: string
+  worker_first_name: string
+  starts_at: string
+  ends_at: string
+  check_in_at: string | null
+  check_out_at: string
+  check_out_auto: boolean
+  check_in_distance_m: number | null
+  gross_cents: number
+  auto_approve_at: string
+  auto_approve_in_seconds: number
+}
+
+/** "23 h 10 min" a partir de uma quantidade de segundos. */
+export function formatRemaining(seconds: number): string {
+  const minutes = Math.max(0, Math.floor(seconds / 60))
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return h > 0 ? `${h} h ${m} min` : `${m} min`
+}
