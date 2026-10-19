@@ -8,6 +8,8 @@ import CompanyVacancyDetailPage from './pages/CompanyVacancyDetailPage'
 import CompanyVacancyNewPage from './pages/CompanyVacancyNewPage'
 import LoginPage from './pages/LoginPage'
 import Placeholder from './pages/Placeholder'
+import VacancyPublicDetailPage from './pages/VacancyPublicDetailPage'
+import VacancySearchPage from './pages/VacancySearchPage'
 import SignupChoicePage from './pages/SignupChoicePage'
 import WorkerDocumentsPage from './pages/WorkerDocumentsPage'
 import WorkerHomePage from './pages/WorkerHomePage'
@@ -38,6 +40,9 @@ export default function AppRoutes() {
         <Route path="cadastro" element={<SignupChoicePage />} />
         <Route path="cadastro/empresa" element={<CompanySignupPage />} />
         <Route path="cadastro/prestador" element={<WorkerSignupPage />} />
+        {/* Busca pública: quem não pode se candidatar vê o que falta (US12). */}
+        <Route path="vagas" element={<VacancySearchPage />} />
+        <Route path="vagas/:id" element={<VacancyPublicDetailPage />} />
         <Route element={<RequireRole role="COMPANY" />}>
           <Route path="empresa/vagas" element={<CompanyVacanciesPage />} />
           <Route path="empresa/vagas/nova" element={<CompanyVacancyNewPage />} />
@@ -48,7 +53,7 @@ export default function AppRoutes() {
           />
         </Route>
         <Route element={<RequireRole role="WORKER" />}>
-          <Route path="prestador/vagas" element={<Placeholder title="Buscar vagas" issue="uma próxima issue" />} />
+          <Route path="prestador/vagas" element={<Navigate to="/vagas" replace />} />
           <Route path="prestador/perfil" element={<WorkerHomePage />} />
           <Route path="perfil/documentos" element={<WorkerDocumentsPage />} />
           <Route path="perfil/pix" element={<WorkerPixPage />} />

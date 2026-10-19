@@ -18,6 +18,6 @@ export function useAuth(): AuthState {
 
 export function homePathFor(role: Role): string {
   if (role === 'COMPANY') return '/empresa/vagas'
-  if (role === 'WORKER') return '/prestador/vagas'
+  if (role === 'WORKER') return '/vagas'
   return '/admin/'
 }

@@ -10,7 +10,7 @@ const MENU: Record<Role, { to: string; label: string }[]> = {
     { to: '/empresa/perfil', label: 'Perfil da empresa' },
   ],
   WORKER: [
-    { to: '/prestador/vagas', label: 'Buscar vagas' },
+    { to: '/vagas', label: 'Buscar vagas' },
     { to: '/prestador/perfil', label: 'Meu perfil' },
   ],
   ADMIN: [],
