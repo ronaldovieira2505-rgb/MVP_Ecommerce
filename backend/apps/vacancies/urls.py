@@ -33,6 +33,16 @@ urlpatterns = [
         candidate_views.ApplicationPhotoView.as_view(),
         name="application-photo",
     ),
+    path(
+        "assignments/<int:pk>/check-in/",
+        worker_views.AssignmentCheckInView.as_view(),
+        name="assignment-check-in",
+    ),
+    path(
+        "assignments/<int:pk>/check-out/",
+        worker_views.AssignmentCheckOutView.as_view(),
+        name="assignment-check-out",
+    ),
     path("workers/me/jobs/", worker_views.WorkerJobsView.as_view(), name="worker-jobs"),
     path("vacancies/", views.VacancyCreateView.as_view(), name="vacancy-create"),
     path("vacancies/<int:pk>/", views.VacancyDetailView.as_view(), name="vacancy-detail"),

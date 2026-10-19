@@ -210,6 +210,14 @@ export interface JobItem {
   status: string
   status_label: string
   can_withdraw: boolean
+  // Só nas alocações (US50/US54).
+  can_check_in?: boolean
+  can_check_out?: boolean
+  check_in_opens_at?: string
+  check_in_closes_at?: string
+  check_in_at?: string | null
+  check_out_at?: string | null
+  check_out_auto?: boolean
 }
 
 export type JobGroupKey = 'waiting' | 'upcoming' | 'in_progress' | 'completed' | 'closed'
@@ -227,6 +235,11 @@ export function formatDateTime(iso: string): string {
 }
 
 const TZ = 'America/Sao_Paulo'
+
+/** Hora local de Brasília: "09:05". */
+export function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('pt-BR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' })
+}
 
 /** Turno em uma linha: "3 de nov., 09:00 às 13:00" (ou com as duas datas). */
 export function formatShift(startIso: string, endIso: string): string {

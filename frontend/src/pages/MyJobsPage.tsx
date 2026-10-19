@@ -4,6 +4,7 @@ import {
   api,
   brl,
   formatShift,
+  formatTime,
   type JobGroupKey,
   type JobItem,
   type MyJobs,
@@ -34,6 +35,11 @@ export default function MyJobsPage() {
   const [jobs, setJobs] = useState<MyJobs | null>(null)
   const [error, setError] = useState('')
   const [actionError, setActionError] = useState('')
+  const [notes, setNotes] = useState<
+    Record<number, { tone: 'error' | 'success'; text: string } | undefined>
+  >({})
+  const [busyId, setBusyId] = useState<number | null>(null)
+  const [confirmingId, setConfirmingId] = useState<number | null>(null)
 
   function load() {
     return api<MyJobs>('/api/workers/me/jobs/')
@@ -44,6 +50,63 @@ export default function MyJobsPage() {
   useEffect(() => {
     void load()
   }, [])
+
+  function say(item: JobItem, tone: 'error' | 'success', text: string) {
+    setNotes((current) => ({ ...current, [item.id]: { tone, text } }))
+  }
+
+  async function checkIn(item: JobItem) {
+    setNotes((current) => ({ ...current, [item.id]: undefined }))
+    if (!navigator.geolocation) {
+      say(item, 'error', 'Seu navegador não oferece localização. Use outro navegador ou aparelho.')
+      return
+    }
+    setBusyId(item.id)
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const done = await api<JobItem>(`/api/assignments/${item.id}/check-in/`, {
+            method: 'POST',
+            body: {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+            },
+          })
+          await load()
+          say(item, 'success', `Check-in feito às ${formatTime(done.check_in_at ?? '')}`)
+        } catch (err) {
+          say(item, 'error', (err as Error).message)
+        } finally {
+          setBusyId(null)
+        }
+      },
+      (geoError) => {
+        setBusyId(null)
+        say(
+          item,
+          'error',
+          geoError.code === 1
+            ? 'A permissão de localização está bloqueada. Ative a localização para este site nas configurações do navegador (cadeado ao lado do endereço) e tente de novo.'
+            : 'Não foi possível obter sua localização. Verifique o GPS e tente de novo.',
+        )
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    )
+  }
+
+  async function checkOut(item: JobItem) {
+    setConfirmingId(null)
+    setBusyId(item.id)
+    try {
+      await api(`/api/assignments/${item.id}/check-out/`, { method: 'POST' })
+      await load()
+    } catch (err) {
+      say(item, 'error', (err as Error).message)
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   async function withdraw(item: JobItem) {
     setActionError('')
@@ -90,6 +153,51 @@ export default function MyJobsPage() {
                     <dd>{brl(item.net_cents)}</dd>
                   </div>
                 </dl>
+                {item.kind === 'assignment' && (
+                  <>
+                    {item.status === 'CONFIRMADA' && item.can_check_in && (
+                      <div className="acoes">
+                        <Button disabled={busyId === item.id} onClick={() => checkIn(item)}>
+                          Cheguei
+                        </Button>
+                      </div>
+                    )}
+                    {item.status === 'CONFIRMADA' &&
+                      !item.can_check_in &&
+                      item.check_in_opens_at &&
+                      item.check_in_closes_at &&
+                      Date.now() < new Date(item.check_in_closes_at).getTime() && (
+                        <p>O check-in abre às {formatTime(item.check_in_opens_at)}.</p>
+                      )}
+                    {item.check_in_at && (
+                      <p>
+                        Check-in feito às {formatTime(item.check_in_at)}
+                        {item.check_out_at &&
+                          ` · Saída às ${formatTime(item.check_out_at)}${
+                            item.check_out_auto ? ' (registrada automaticamente)' : ''
+                          }`}
+                      </p>
+                    )}
+                    {item.can_check_out &&
+                      (confirmingId === item.id ? (
+                        <div className="acoes">
+                          <Button disabled={busyId === item.id} onClick={() => checkOut(item)}>
+                            Confirmar encerramento
+                          </Button>
+                          <Button variant="secondary" onClick={() => setConfirmingId(null)}>
+                            Voltar
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="acoes">
+                          <Button onClick={() => setConfirmingId(item.id)}>Encerrar turno</Button>
+                        </div>
+                      ))}
+                    {notes[item.id] && (
+                      <Alert tone={notes[item.id]!.tone}>{notes[item.id]!.text}</Alert>
+                    )}
+                  </>
+                )}
                 {item.can_withdraw && (
                   <div className="acoes">
                     <Button variant="secondary" onClick={() => withdraw(item)}>
