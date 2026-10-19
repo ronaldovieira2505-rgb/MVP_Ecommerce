@@ -129,6 +129,33 @@ export interface Vacancy {
   payment_method?: string
 }
 
+/** Candidato pendente: sem CPF, telefone nem PIX (US42). */
+export interface Candidate {
+  id: number
+  name: string
+  photo_url: string | null
+  verified: boolean
+  completed_shifts: number
+  applied_at: string
+}
+
+/** Prestador alocado: contato liberado após a aprovação. */
+export interface TeamMember {
+  id: number
+  first_name: string
+  phone: string
+  status: string
+  status_label: string
+}
+
+export interface VacancyCandidates {
+  positions: number
+  filled_positions: number
+  team_complete: boolean
+  candidates: Candidate[]
+  team: TeamMember[]
+}
+
 export interface VacancyList {
   total_retained_cents: number
   results: Vacancy[]

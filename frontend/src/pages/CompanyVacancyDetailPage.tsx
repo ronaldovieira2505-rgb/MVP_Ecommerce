@@ -4,6 +4,7 @@ import { api, ApiError, brl, formatShift, type Vacancy } from '../api'
 import { CATEGORIES } from '../categories'
 import { Alert, Badge, Button, Card, Field, SelectField, Slots } from '../components/ui'
 import { badgeToneFor, toneFor } from '../status'
+import VacancyCandidatesSection from './VacancyCandidates'
 
 const METHODS: Record<string, string> = { PIX: 'PIX', BOLETO: 'boleto', CARTAO: 'cartão' }
 const READ_ONLY_HINT =
@@ -44,6 +45,12 @@ export default function CompanyVacancyDetailPage() {
       .then(setVacancy)
       .catch((e) => setError(e instanceof ApiError ? e.message : 'Não foi possível carregar a vaga.'))
   }, [id])
+
+  function refreshVacancy() {
+    api<Vacancy>(`/api/vacancies/${id}/`)
+      .then(setVacancy)
+      .catch(() => undefined)
+  }
 
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm({ ...form, [key]: e.target.value })
@@ -183,6 +190,9 @@ export default function CompanyVacancyDetailPage() {
           <p className="total">
             Total a pagar <strong>{brl(vacancy.total_cents)}</strong>
           </p>
+          {['PUBLICADA', 'CANDIDATURAS_ENCERRADAS', 'EM_ANDAMENTO'].includes(vacancy.status) && (
+            <VacancyCandidatesSection vacancyId={vacancy.id} onChange={refreshVacancy} />
+          )}
           {vacancy.status === 'AGUARDANDO_PAGAMENTO' && (
             <>
               {vacancy.payment_method && (
