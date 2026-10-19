@@ -8,6 +8,7 @@ urlpatterns = [
     path("", include("apps.companies.urls")),
     path("", include("apps.workers.urls")),
     path("", include("apps.vacancies.urls")),
+    path("", include("apps.payments.urls")),
     path("notifications/", notification_views.NotificationListView.as_view(), name="notifications"),
     path(
         "notifications/read-all/",

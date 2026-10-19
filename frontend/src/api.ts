@@ -276,3 +276,40 @@ export function formatRemaining(seconds: number): string {
   const m = minutes % 60
   return h > 0 ? `${h} h ${m} min` : `${m} min`
 }
+
+/** Item "a receber" da carteira do prestador (US60). */
+export interface WalletReceivable {
+  assignment_id: number
+  vacancy_id: number
+  title: string
+  company_name: string
+  starts_at: string
+  ends_at: string
+  status: string
+  status_label: string
+  net_cents: number
+  expected_release_at: string | null
+  release_note: string
+}
+
+/** Item já liberado (repasse) da carteira. */
+export interface WalletReleased {
+  assignment_id: number
+  vacancy_id: number
+  title: string
+  company_name: string
+  starts_at: string
+  ends_at: string
+  released_at: string
+  gross_cents: number
+  fee_cents: number
+  net_cents: number
+  pix_destination: string
+}
+
+export interface Wallet {
+  totals: { receivable_cents: number; released_cents: number; fees_cents: number }
+  fee_percent: number
+  receivable: WalletReceivable[]
+  released: WalletReleased[]
+}
