@@ -1,3 +1,5 @@
+from zoneinfo import ZoneInfo
+
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.db import models
@@ -88,6 +90,11 @@ class Worker(models.Model):
 
     def is_suspended(self, now):
         return self.suspended_until is not None and self.suspended_until > now
+
+    @property
+    def suspension_message(self):
+        until = self.suspended_until.astimezone(ZoneInfo("America/Sao_Paulo"))
+        return f"Sua conta está suspensa até {until.strftime('%d/%m/%Y')}."
 
 
 class WorkerDocument(models.Model):

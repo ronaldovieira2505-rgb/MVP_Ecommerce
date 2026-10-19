@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -78,7 +80,8 @@ class Vacancy(models.Model):
 
     def accepts_applications(self, now):
         if self.status == self.Status.PUBLISHED:
-            return True
+            close_minutes = PlatformParameters.get().applications_close_minutes_before
+            return now < self.starts_at - timedelta(minutes=close_minutes)
         return (
             self.reopened
             and now < self.ends_at

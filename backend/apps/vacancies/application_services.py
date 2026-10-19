@@ -11,9 +11,10 @@ from apps.vacancies.state_machine import APPLICATION_MACHINE, ASSIGNMENT_MACHINE
 from apps.workers.models import Worker
 
 A = Application.Status
+MY_JOBS_LINK = "/meus-trabalhos"
 
 
-def _has_overlap(worker, vacancy):
+def has_overlap(worker, vacancy):
     return (
         Assignment.objects.filter(worker=worker, status__in=Assignment.ACTIVE_STATUSES)
         .filter(vacancy__starts_at__lt=vacancy.ends_at, vacancy__ends_at__gt=vacancy.starts_at)
@@ -27,17 +28,19 @@ def apply_to_vacancy(vacancy, worker, *, actor=None, now=None):
     now = now or timezone.now()
     vacancy = Vacancy.objects.select_for_update().get(pk=vacancy.pk)
     if not vacancy.accepts_applications(now):
-        raise DomainError("A vaga não aceita candidaturas.")
+        raise DomainError("As candidaturas desta vaga estão encerradas.")
+    if vacancy.filled_positions >= vacancy.positions:
+        raise DomainError("Esta vaga está lotada.")
     if worker.verification_status != Worker.VerificationStatus.APPROVED:
         raise DomainError("Só prestadores aprovados podem se candidatar.")
     if not worker.pix_key:
         raise DomainError("Cadastre uma chave PIX para se candidatar.")
     if worker.is_suspended(now):
-        raise DomainError("Prestador suspenso não pode se candidatar.")
+        raise DomainError(worker.suspension_message)
     if Application.objects.filter(vacancy=vacancy, worker=worker).exists():
         raise DomainError("Você já se candidatou a esta vaga.")
-    if _has_overlap(worker, vacancy):
-        raise DomainError("Você já tem outro turno neste horário.")
+    if has_overlap(worker, vacancy):
+        raise DomainError("Você já tem um turno nesse horário.")
     application = Application.objects.create(vacancy=vacancy, worker=worker)
     record_creation(application, APPLICATION_MACHINE, actor=actor or worker.user, now=now)
     return application
@@ -57,7 +60,7 @@ def approve_application(application, *, actor=None, now=None):
         raise DomainError("O turno já começou; não é possível aprovar esta candidatura.")
     if worker.is_suspended(now):
         raise DomainError("Prestador suspenso não pode ser aprovado.")
-    if _has_overlap(worker, vacancy):
+    if has_overlap(worker, vacancy):
         raise DomainError("O prestador já tem outro turno neste horário.")
     application = transition(
         application,
@@ -80,6 +83,7 @@ def approve_application(application, *, actor=None, now=None):
         "CANDIDATURA_APROVADA",
         "Candidatura aprovada",
         f"Você foi aprovado para “{vacancy.title}”.",
+        link=MY_JOBS_LINK,
     )
     return assignment
 
@@ -101,6 +105,7 @@ def reject_application(application, *, actor=None, now=None):
         "CANDIDATURA_RECUSADA",
         "Candidatura recusada",
         f"Sua candidatura para “{application.vacancy.title}” foi recusada.",
+        link=MY_JOBS_LINK,
     )
     return application
 
