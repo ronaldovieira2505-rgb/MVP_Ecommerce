@@ -4,6 +4,7 @@ import { api, ApiError, brl, formatShift, type Vacancy } from '../api'
 import { CATEGORIES } from '../categories'
 import { Alert, Badge, Button, Card, Field, SelectField, Slots } from '../components/ui'
 import { badgeToneFor, toneFor } from '../status'
+import PendingAssignmentsSection from './PendingAssignments'
 import VacancyCandidatesSection from './VacancyCandidates'
 
 const METHODS: Record<string, string> = { PIX: 'PIX', BOLETO: 'boleto', CARTAO: 'cartão' }
@@ -192,6 +193,9 @@ export default function CompanyVacancyDetailPage() {
           </p>
           {['PUBLICADA', 'CANDIDATURAS_ENCERRADAS', 'EM_ANDAMENTO'].includes(vacancy.status) && (
             <VacancyCandidatesSection vacancyId={vacancy.id} onChange={refreshVacancy} />
+          )}
+          {['CANDIDATURAS_ENCERRADAS', 'EM_ANDAMENTO'].includes(vacancy.status) && (
+            <PendingAssignmentsSection vacancyId={vacancy.id} onChange={refreshVacancy} />
           )}
           {vacancy.status === 'AGUARDANDO_PAGAMENTO' && (
             <>

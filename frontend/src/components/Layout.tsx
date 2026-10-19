@@ -7,6 +7,7 @@ import { Alert, Button } from './ui'
 const MENU: Record<Role, { to: string; label: string }[]> = {
   COMPANY: [
     { to: '/empresa/vagas', label: 'Minhas vagas' },
+    { to: '/empresa/confirmar-presenca', label: 'Confirmar presença' },
     { to: '/empresa/perfil', label: 'Perfil da empresa' },
   ],
   WORKER: [
