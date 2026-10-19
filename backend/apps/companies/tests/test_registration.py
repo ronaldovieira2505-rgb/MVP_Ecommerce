@@ -189,8 +189,6 @@ def test_marcacao_nao_conferidos_visivel_ao_admin(client):
         {"password": "curta12"},
         {"tax_regime": "LUCRO"},
         {"preferred_payment_method": "DINHEIRO"},
-        {"state_registration": ""},
-        {"phone": ""},
         {"owner_name": ""},
         {"email": "nao-e-email"},
     ],
@@ -200,6 +198,27 @@ def test_cadastro_valida_campos(overrides):
 
     assert response.status_code == 400
     assert not Company.objects.exists()
+
+
+def test_cadastro_simplificado_so_com_cnpj_razao_social_regime_e_acesso():
+    response = APIClient().post(
+        "/api/companies/register/",
+        {
+            "cnpj": CNPJ,
+            "legal_name": "Empresa Simples LTDA",
+            "tax_regime": "SIMPLES",
+            "owner_name": "Maria Souza",
+            "email": "maria@example.com",
+            "password": "senha-forte-123",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+    company = Company.objects.get(cnpj=CNPJ)
+    assert company.state_registration == ""
+    assert company.phone == ""
+    assert company.preferred_payment_method == ""
 
 
 def test_cadastro_aceita_inscricao_estadual_numerica_e_senha_de_8_caracteres():

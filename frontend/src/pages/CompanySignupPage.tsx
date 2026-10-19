@@ -5,7 +5,7 @@ import { homePathFor, useAuth } from '../authContext'
 import { Alert, Button, Card, Field, SelectField } from '../components/ui'
 import { isValidCnpj, onlyDigits } from '../cnpj'
 
-const STEPS = ['CNPJ', 'Dados', 'Pagamento', 'Acesso'] as const
+const STEPS = ['CNPJ', 'Empresa', 'Acesso'] as const
 
 const EMPTY = {
   cnpj: '',
@@ -139,26 +139,8 @@ export default function CompanySignupPage() {
         {step === 1 && (
           <>
             {notice && <Alert tone="info">{notice}</Alert>}
+            {/* Endereço e demais dados da BrasilAPI seguem no envio, sem ocupar a tela. */}
             <Field label="Razão social" required value={form.legal_name} onChange={set('legal_name')} />
-            <Field label="Nome fantasia" value={form.trade_name} onChange={set('trade_name')} />
-            <Field
-              label="Situação cadastral"
-              value={form.registration_status}
-              onChange={set('registration_status')}
-            />
-            <Field label="Logradouro" value={form.street} onChange={set('street')} />
-            <Field label="Número" value={form.number} onChange={set('number')} />
-            <Field label="Complemento" value={form.complement} onChange={set('complement')} />
-            <Field label="Bairro" value={form.district} onChange={set('district')} />
-            <Field label="Cidade" value={form.city} onChange={set('city')} />
-            <Field label="UF" maxLength={2} value={form.state} onChange={set('state')} />
-            <Field label="CEP" value={form.zip_code} onChange={set('zip_code')} />
-            <Field
-              label="Inscrição estadual (ou ISENTO)"
-              required
-              value={form.state_registration}
-              onChange={set('state_registration')}
-            />
             <SelectField
               label="Regime tributário"
               required
@@ -174,31 +156,7 @@ export default function CompanySignupPage() {
         {step === 2 && (
           <>
             <Field
-              label="Telefone"
-              type="tel"
-              autoComplete="tel"
-              required
-              value={form.phone}
-              onChange={set('phone')}
-            />
-            <SelectField
-              label="Meio de pagamento preferido"
-              required
-              value={form.preferred_payment_method}
-              onChange={set('preferred_payment_method')}
-            >
-              <option value="">Selecione</option>
-              <option value="PIX">PIX</option>
-              <option value="BOLETO">Boleto</option>
-              <option value="CARTAO">Cartão</option>
-            </SelectField>
-            <p>Guardamos só a sua preferência. Nenhum dado de cartão é coletado.</p>
-          </>
-        )}
-        {step === 3 && (
-          <>
-            <Field
-              label="Nome do responsável"
+              label="Nome"
               autoComplete="name"
               required
               value={form.owner_name}
