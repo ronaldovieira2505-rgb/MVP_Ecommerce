@@ -134,6 +134,40 @@ export interface VacancyList {
   results: Vacancy[]
 }
 
+/** Card da busca de vagas do prestador (US12/US17). */
+export interface VacancyCard {
+  id: number
+  title: string
+  company_name: string
+  category: string
+  category_label: string
+  starts_at: string
+  ends_at: string
+  district: string
+  city: string
+  state: string
+  gross_cents: number
+  fee_percent: number
+  fee_cents: number
+  net_cents: number
+  remaining_positions: number
+  payment_guaranteed: boolean
+  urgent: boolean
+  distance_km: number | null
+}
+
+export interface VacancyPublicDetail extends VacancyCard {
+  description: string
+  street: string
+  number: string
+  complement: string
+  zip_code: string
+  latitude: string
+  longitude: string
+  can_apply: boolean
+  apply_blocker: string | null
+}
+
 export function brl(cents: number): string {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }

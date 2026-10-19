@@ -7,16 +7,19 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from rest_framework import serializers
 from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.models import Role
 from apps.companies.models import Company
 from apps.companies.views import first_error
 from apps.core.exceptions import DomainError
+from apps.core.models import PlatformParameters
 from apps.core.permissions import IsCompanyUser
 from apps.payments import services as payments
 from apps.payments.models import Custody, LedgerEntry
-from apps.vacancies import services
+from apps.vacancies import search, services
 from apps.vacancies.models import Assignment, Vacancy
 from integrations.payments import PaymentGatewayError
 
@@ -137,8 +140,28 @@ def forbidden_company(company):
     return None
 
 
+class PublicReadMixin:
+    """GET é público (busca do prestador, US12); os demais métodos exigem empresa."""
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return super().get_permissions()
+
+
 @method_decorator(csrf_protect, name="dispatch")
-class VacancyCreateView(CompanyAreaView):
+class VacancyCreateView(PublicReadMixin, CompanyAreaView):
+    def get(self, request):
+        """Busca: ?q=&category=&date_from=&date_to=&min_pay=&lat=&lng= (US12/13/14/17)."""
+        try:
+            found = search.search(request.query_params)
+        except DomainError as error:
+            return Response({"detail": str(error)}, status=400)
+        params = PlatformParameters.get()
+        return Response(
+            {"results": [search.serialize_card(v, d, params) for v, d in found]}
+        )
+
     def post(self, request):
         company = self.company(request)
         denied = forbidden_company(company)
@@ -218,7 +241,7 @@ READ_ONLY_MESSAGE = (
 )
 
 
-class VacancyDetailView(CompanyAreaView):
+class VacancyDetailView(PublicReadMixin, CompanyAreaView):
     @method_decorator(csrf_protect)
     def patch(self, request, pk):
         company = self.company(request)
@@ -246,6 +269,9 @@ class VacancyDetailView(CompanyAreaView):
         return Response(data)
 
     def get(self, request, pk):
+        user = request.user
+        if not (user.is_authenticated and user.role == Role.COMPANY):
+            return self.public_detail(request, pk)
         company = self.company(request)
         if company is None:
             return Response({"detail": NO_COMPANY}, status=403)
@@ -255,6 +281,14 @@ class VacancyDetailView(CompanyAreaView):
         data = serialize_vacancy(vacancy)
         data["payment_method"] = company.preferred_payment_method
         return Response(data)
+
+
+    def public_detail(self, request, pk):
+        """Detalhe para o prestador: só vagas que aparecem na busca (US12/US17)."""
+        vacancy = next((v for v in search.searchable_vacancies() if v.pk == pk), None)
+        if vacancy is None:
+            return Response({"detail": "Vaga não encontrada."}, status=404)
+        return Response(search.serialize_detail(vacancy, request.user))
 
 
 @method_decorator(csrf_protect, name="dispatch")
