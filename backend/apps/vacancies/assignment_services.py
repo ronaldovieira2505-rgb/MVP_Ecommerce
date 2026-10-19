@@ -1,6 +1,7 @@
 """Serviço de domínio da Alocação: execução, validação e liquidação."""
 
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 
 from django.db import transaction
 from django.utils import timezone
@@ -18,9 +19,21 @@ from integrations.geo import haversine_distance_m
 S = Assignment.Status
 
 
+def _validated_coordinate(value, name, limit):
+    try:
+        number = Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError):
+        raise DomainError(f"{name} inválida.") from None
+    if not number.is_finite() or abs(number) > limit:
+        raise DomainError(f"{name} fora da faixa válida.")
+    return number.quantize(Decimal("0.000001"))
+
+
 @transaction.atomic
 def check_in(assignment, *, lat, lng, actor=None, now=None):
     now = now or timezone.now()
+    lat = _validated_coordinate(lat, "Latitude", 90)
+    lng = _validated_coordinate(lng, "Longitude", 180)
     ASSIGNMENT_MACHINE.validate(assignment.status, S.IN_PROGRESS)
     params = PlatformParameters.get()
     vacancy = assignment.vacancy
@@ -31,7 +44,7 @@ def check_in(assignment, *, lat, lng, actor=None, now=None):
     distance = haversine_distance_m(lat, lng, vacancy.latitude, vacancy.longitude)
     if distance > params.geofence_radius_m:
         raise DomainError(
-            f"Você está a {round(distance)} m do local; o limite é {params.geofence_radius_m} m."
+            f"Você está a {round(distance)} m do local. Aproxime-se para registrar a chegada."
         )
     return transition(
         assignment,

@@ -1,5 +1,8 @@
 """API do prestador: candidatar-se, desistir e acompanhar os trabalhos (US37/US38)."""
 
+from datetime import timedelta
+
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from rest_framework.authentication import SessionAuthentication
@@ -10,6 +13,7 @@ from apps.core.exceptions import DomainError, InvalidTransition
 from apps.core.models import PlatformParameters
 from apps.core.permissions import IsWorkerUser
 from apps.vacancies import application_services as applications
+from apps.vacancies import assignment_services as assignments
 from apps.vacancies.models import Application, Assignment, Vacancy
 
 AS = Assignment.Status
@@ -32,6 +36,29 @@ class WorkerAreaView(APIView):
 
     def worker(self, request):
         return getattr(request.user, "worker", None)
+
+
+def _execution_info(assignment, params, now):
+    """Janela de check-in e horários registrados, para os botões de "Meus trabalhos"."""
+    vacancy = assignment.vacancy
+    opens_at = vacancy.starts_at - timedelta(minutes=params.checkin_open_minutes_before)
+    closes_at = vacancy.starts_at + timedelta(minutes=params.no_show_tolerance_minutes)
+    return {
+        "check_in_opens_at": opens_at.isoformat(),
+        "check_in_closes_at": closes_at.isoformat(),
+        "can_check_in": assignment.status == AS.CONFIRMED and opens_at <= now <= closes_at,
+        "can_check_out": assignment.status == AS.IN_PROGRESS,
+        "check_in_at": assignment.check_in_at and assignment.check_in_at.isoformat(),
+        "check_out_at": assignment.check_out_at and assignment.check_out_at.isoformat(),
+        "check_out_auto": assignment.check_out_auto,
+    }
+
+
+def serialize_assignment(assignment, params=None, now=None):
+    params = params or PlatformParameters.get()
+    item = _item("assignment", assignment, assignment.vacancy, params)
+    item.update(_execution_info(assignment, params, now or timezone.now()))
+    return item
 
 
 def _item(kind, obj, vacancy, params):
@@ -105,6 +132,7 @@ class WorkerJobsView(WorkerAreaView):
         if worker is None:
             return Response({"detail": "Acesso restrito a prestadores."}, status=403)
         params = PlatformParameters.get()
+        now = timezone.now()
         groups = {"waiting": [], "upcoming": [], "in_progress": [], "completed": [], "closed": []}
         for application in worker.applications.select_related("vacancy__company"):
             if application.status == AP.PENDING:
@@ -123,9 +151,52 @@ class WorkerJobsView(WorkerAreaView):
                 key = "completed"
             else:
                 key = "closed"
-            groups[key].append(_item("assignment", assignment, assignment.vacancy, params))
+            groups[key].append(serialize_assignment(assignment, params, now))
         for key, items in groups.items():
             newest_first = key in ("completed", "closed")
             items.sort(key=lambda i: (i["starts_at"], i["id"]), reverse=newest_first)
         return Response({"groups": groups})
+
+
+class AssignmentActionView(WorkerAreaView):
+    """Base das ações do prestador sobre a própria alocação (404 para a de outro)."""
+
+    def post(self, request, pk):
+        worker = self.worker(request)
+        assignment = None
+        if worker:
+            assignment = (
+                Assignment.objects.select_related("vacancy__company")
+                .filter(pk=pk, worker=worker)
+                .first()
+            )
+        if assignment is None:
+            return Response({"detail": "Alocação não encontrada."}, status=404)
+        try:
+            assignment = self.run(request, assignment)
+        except DomainError as error:  # inclui InvalidTransition
+            return Response({"detail": str(error)}, status=409)
+        return Response(serialize_assignment(assignment))
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class AssignmentCheckInView(AssignmentActionView):
+    """`POST /api/assignments/<id>/check-in/` com `lat`, `lng` e `accuracy` (m).
+
+    A distância é calculada no servidor (Haversine); a precisão é só informativa.
+    """
+
+    def run(self, request, assignment):
+        lat, lng = request.data.get("lat"), request.data.get("lng")
+        if lat is None or lng is None:
+            raise DomainError("Informe a sua localização para registrar a chegada.")
+        return assignments.check_in(assignment, lat=lat, lng=lng, actor=request.user)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class AssignmentCheckOutView(AssignmentActionView):
+    """`POST /api/assignments/<id>/check-out/`: encerra o turno."""
+
+    def run(self, request, assignment):
+        return assignments.check_out(assignment, actor=request.user)
 
